@@ -1,0 +1,55 @@
+
+.card {
+    height: 400px; /* 카드 높이 고정 */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+  
+.card-img-top {
+    width: 100%; /* 이미지가 카드 너비를 벗어나지 않게 */
+    height: 200px; /* 고정된 높이 */
+    object-fit: cover; /* 비율 유지하며 자르기 */
+}
+  
+.card-title,
+.card-text {
+    overflow: hidden;
+    white-space: normal;
+    text-overflow: ellipsis;
+}
+  
+.card-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 1; /* 제목은 최대 1줄 */
+    -webkit-box-orient: vertical;
+}
+
+.card-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* 저자는 최대 2줄 */
+    -webkit-box-orient: vertical;
+}
+
+.card-body {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.cart-count { 
+    background-color: red; 
+    font-size: 0.8rem; 
+    font-weight: bold;
+    color: white;
+    border-radius: 50%; 
+    padding: 1px 7px; 
+    line-height: 1; 
+}
