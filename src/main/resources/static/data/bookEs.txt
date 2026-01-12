@@ -1,0 +1,49 @@
+[Nori Analyzer와 정렬용 필드가 적용된 인덱스 생성]
+
+curl -X PUT "http://localhost:9200/books" \
+-H "Content-Type: application/json" \
+-d '{
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "korean_analyzer": {
+          "type": "custom",
+          "tokenizer": "nori_tokenizer",
+          "filter": ["lowercase", "nori_part_of_speech"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "analyzer": "korean_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "author": {
+        "type": "text",
+        "analyzer": "korean_analyzer",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "company": {
+        "type": "text",
+        "analyzer": "korean_analyzer"
+      },
+      "summary": {
+        "type": "text",
+        "analyzer": "korean_analyzer"
+      }
+    }
+  }
+}'

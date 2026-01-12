@@ -1,0 +1,31 @@
+{
+  "analysis": {
+    "tokenizer": {
+      "my_nori_tokenizer": {
+        "type": "nori_tokenizer",
+        "decompound_mode": "mixed"
+      }
+    },
+    "filter": {
+      "stopwords": {
+        "type": "stop",
+        "stopwords": [
+          "의", "가", "이", "은", "는", "을", "를", "에", "에서", "에게", "께", "한테",
+          "로", "으로", "와", "과", "도", "또", "만", "밖에", "뿐", "따위", "처럼",
+          "마다", "까지", "부터", "보다", "하곤", "조차", "라도", "마저", "만큼"
+        ]
+      }
+    },
+    "analyzer": {
+      "my_nori_analyzer": {
+        "type": "custom",
+        "tokenizer": "my_nori_tokenizer",
+        "filter": [
+          "lowercase",
+          "trim",
+          "stopwords"
+        ]
+      }
+    }
+  }
+}
