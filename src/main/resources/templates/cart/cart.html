@@ -36,21 +36,21 @@
                         <th>수량</th>
                         <th>소계</th>
                     </tr>
-                    <tr th:each="cartDto: ${cartDtoList}" th:attr="data-cid=${cartDto.cid}" style="vertical-align: middle;">
+                    <tr th:each="cartDto: ${cartDtoList}" th:attr="data-cid=${cartDto.id}" style="vertical-align: middle;">
                         <td style="text-align: center; width: 10%;">
                             <img th:src="${cartDto.imageUrl}" alt="${cartDto.title}" height="60">
                         </td>
                         <td style="text-align: left; width: 50%;" th:text="${cartDto.title}">제목</td>
                         <td style="text-align: right; width: 10%;" th:text="${#numbers.formatInteger(cartDto.price, 0, 'COMMA')}">20000</td>
                         <td style="width: 20%;">
-                            <a href="#" th:onclick="handleMinus([[${cartDto.cid}]])">
+                            <a href="#" th:onclick="handleMinus([[${cartDto.id}]])">
                                 <i class="fa-solid fa-circle-minus me-2"></i>
                             </a>
                             <span class="cart-quantity" th:text="${cartDto.quantity}">2</span>
-                            <a href="#" th:onclick="handlePlus([[${cartDto.cid}]])">
+                            <a href="#" th:onclick="handlePlus([[${cartDto.id}]])">
                                 <i class="fa-solid fa-circle-plus ms-2"></i>
                             </a>
-                            <a href="#" th:onclick="handleTrash([[${cartDto.cid}]])">
+                            <a href="#" th:onclick="handleTrash([[${cartDto.id}]])">
                                 <i class="fa-solid fa-trash ms-2"></i>
                             </a>
                         </td>
@@ -78,6 +78,37 @@
                 <hr>
                 <div class="row my-3">
                     <div class="col-2"></div>
+                    <div class="col-8">
+                        <!-- 배송지 선택 -->
+                        <div class="mb-3">
+                            <label for="saved-address" class="form-label">
+                                <i class="fa-solid fa-map-marker-alt"></i> 저장된 배송지 선택
+                            </label>
+                            <div class="input-group">
+                                <select id="saved-address" class="form-control" onchange="loadSavedAddress()">
+                                    <option value="">직접 입력</option>
+                                    <option th:each="addr : ${deliveryAddresses}"
+                                            th:value="${addr.id}"
+                                            th:data-alias="${addr.alias}"
+                                            th:data-recipient="${addr.recipientName}"
+                                            th:data-tel="${addr.tel}"
+                                            th:data-zipcode="${addr.zipCode}"
+                                            th:data-basic="${addr.basicAddress}"
+                                            th:data-detail="${addr.detailAddress}"
+                                            th:data-memo="${addr.memo}">
+                                        [[${addr.alias}]] - [[${addr.recipientName}]] ([[${addr.basicAddress}]])
+                                    </option>
+                                </select>
+                                <a href="/view/delivery-addresses" class="btn btn-outline-secondary" target="_blank">
+                                    <i class="fas fa-cog"></i> 관리
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-2"></div>
+                </div>
+                <div class="row my-3">
+                    <div class="col-2"></div>
                     <div class="col-3">
                         <div>
                             <label for="postcode" class="form-label">우편번호</label>
@@ -88,7 +119,7 @@
                         </div>
                         <div class="mt-3">
                             <label for="recipient-name" class="form-label">받는분 이름*</label>
-                            <input id="recipient-name" class="form-control" type="text" th:value="${session.sessUname}">
+                            <input id="recipient-name" class="form-control" type="text" th:value="${user.uname}">
                         </div>
                         <div class="mt-3">
                             <label for="tel" class="form-label">전화번호*</label>
@@ -118,11 +149,11 @@
                     <div class="col-2"></div>
                 </div>
                 <input type="hidden" id="TOSS_CLIENT_KEY" th:value="${TOSS_CLIENT_KEY}">
-                <input type="hidden" id="uid" th:value="${session.sessUid}">
+                <input type="hidden" id="uid" th:value="${user.id}">
 
                 <div class="text-center mt-3">
                     <button type="button" class="btn btn-primary" onclick="handleOrder()">주문하기</button>
-                    <button type="button" class="btn btn-outline-secondary ms-2" onclick="location.href='/mall/list'">쇼핑하기</button>
+                    <button type="button" class="btn btn-outline-secondary ms-2" onclick="location.href='/view/books/list'">쇼핑하기</button>
                 </div>
             </main>
         </div>

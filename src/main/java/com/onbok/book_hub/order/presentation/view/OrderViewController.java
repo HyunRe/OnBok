@@ -6,6 +6,8 @@ import com.onbok.book_hub.cart.domain.model.Cart;
 import com.onbok.book_hub.common.annotation.CurrentUser;
 import com.onbok.book_hub.common.aspect.CheckPermission;
 import com.onbok.book_hub.common.aspect.LogExecutionTime;
+import com.onbok.book_hub.common.exception.ErrorCode;
+import com.onbok.book_hub.common.exception.ExpectedException;
 import com.onbok.book_hub.delivery.application.DeliveryAddressService;
 import com.onbok.book_hub.delivery.domain.model.DeliveryAddress;
 import com.onbok.book_hub.order.application.OrderCommandService;
@@ -20,9 +22,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,10 +43,10 @@ public class OrderViewController {
     public String createOrder(@CurrentUser User user,
                               @Valid @RequestBody OrderCreateRequestDto createRequestDto) {
         TossPayment tossPayment = tossPaymentService.findById(createRequestDto.getPaymentId());
-        DeliveryAddress deliveryAddress = deliveryAddressService.findById(createRequestDto.getDeliveryAddressId());
         List<Cart> cartList = cartService.getCartItemsByUser(user.getId());
         if (!cartList.isEmpty()) {
-            orderCommandService.createOrder(user.getId(), cartList, tossPayment, deliveryAddress);
+            // 배송지 ID를 직접 전달 (배송지 관리에서 미리 등록된 배송지 사용)
+            orderCommandService.createOrder(user.getId(), cartList, tossPayment, createRequestDto.getDeliveryAddressId());
         }
         return "redirect:/order/list";
     }
@@ -59,6 +60,60 @@ public class OrderViewController {
         model.addAttribute("orderList", orderList);
         model.addAttribute("orderTitleList", orderTitleList);
         return "order/list";
+    }
+
+    @GetMapping("/detail/{id}")
+    public String detail(@CurrentUser User user, @PathVariable Long id, Model model) {
+        Order order = orderQueryService.findById(id);
+
+        // 본인의 주문인지 확인
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new ExpectedException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+
+        model.addAttribute("menu", "order");
+        model.addAttribute("order", order);
+        return "order/detail";
+    }
+
+    @PostMapping("/cancel/{id}")
+    public String cancelOrder(@CurrentUser User user, @PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            Order order = orderQueryService.findById(id);
+
+            // 본인의 주문인지 확인
+            if (!order.getUser().getId().equals(user.getId())) {
+                throw new ExpectedException(ErrorCode.UNAUTHORIZED_ACCESS);
+            }
+
+            orderCommandService.cancelOrder(id);
+            redirectAttributes.addFlashAttribute("msg", "주문이 취소되었습니다.");
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("msg", "주문 취소 실패: " + e.getMessage());
+        } catch (ExpectedException e) {
+            redirectAttributes.addFlashAttribute("msg", "주문 취소 실패: " + e.getErrorCode().getMessage());
+        }
+        return "redirect:/view/orders/detail/" + id;
+    }
+
+    @PostMapping("/refund/{id}")
+    public String refundOrder(@CurrentUser User user, @PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            Order order = orderQueryService.findById(id);
+
+            // 본인의 주문인지 확인
+            if (!order.getUser().getId().equals(user.getId())) {
+                throw new ExpectedException(ErrorCode.UNAUTHORIZED_ACCESS);
+            }
+
+            orderCommandService.refundOrder(id);
+            redirectAttributes.addFlashAttribute("msg", "환불이 완료되었습니다.");
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("msg", "환불 실패: " + e.getMessage());
+        } catch (ExpectedException e) {
+            redirectAttributes.addFlashAttribute("msg", "환불 실패: " + e.getErrorCode().getMessage());
+        }
+        return "redirect:/view/orders/detail/" + id;
     }
 
     @GetMapping("/listAll")

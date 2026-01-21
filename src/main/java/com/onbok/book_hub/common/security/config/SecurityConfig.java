@@ -4,6 +4,7 @@ import com.onbok.book_hub.common.security.authentication.MyUserDetailsService;
 import com.onbok.book_hub.common.security.jwt.JwtRequestFilter;
 import com.onbok.book_hub.common.security.jwt.JwtTokenUtil;
 import com.onbok.book_hub.common.security.oauth2.MyOAuth2UserService;
+import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @RequiredArgsConstructor
@@ -21,52 +23,98 @@ public class SecurityConfig {
     private final JwtTokenUtil jwtTokenUtil;
     private final MyUserDetailsService myUserDetailsService;
 
+    /**
+     * 🔐 Security Filter Chain
+     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-        httpSecurity.csrf(auth -> auth.disable())   // CSRF 방어 기능 비활성화
-                .headers(x -> x.frameOptions(y -> y.disable()))     // H2 Console 사용을 위해
-                .authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/book/list", "/book/detail/**", "/bookEs/list", "/bookEs/detail/**"
-                                , "/mall/list", "/mall/detail/**", "/user/register", "/restaurant/list", "/restaurant/detail/**",
-                                "h2-console", "/demo/**", "/misc/**", "/websocket/**", "/echo","/personal",
-                                "img/**", "/js/**", "/css/**", "/error/**").permitAll()     // 누구든 허용
-                        .requestMatchers("/book/insert", "/book/yes24", "/bookEs/yes24", "/order/listAll", "/restaurant/init",
-                                "/order/bookStat", "/user/list", "/user/delete").hasAuthority("ROLE_ADMIN")     // 인가된 관리자 허용
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                // CSRF 비활성화
+                .csrf(csrf -> csrf.disable())
+
+                // H2 콘솔 사용 시 필요
+                .headers(headers -> headers.frameOptions(frame -> frame.disable()))
+
+                // 권한 설정
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/view/books/list",
+                                "/view/books/detail/**",
+                                "/view/bookEs/list",
+                                "/view/bookEs/detail/**",
+                                "/mall/list",
+                                "/mall/detail/**",
+                                "/view/users/register",
+                                "/view/users/login",
+                                "/authenticate",              // ✅ JWT 발급 API
+                                "/img/**",
+                                "/js/**",
+                                "/css/**",
+                                "/error/**",
+                                "/favicon.ico",
+                                "/swagger-ui.html",           // ✅ Swagger UI
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**"
+                        ).permitAll()
+                        .requestMatchers(
+                                "/view/books/insert",
+                                "/view/books/yes24",
+                                "/api/bookEs/yes24",
+                                "/view/orders/listAll",
+                                "/view/orders/bookStat",
+                                "/view/users/list",
+                                "/view/users/delete/**"
+                        ).hasAuthority("ADMIN")
                         .anyRequest().authenticated()
                 )
-                .formLogin(auth -> auth
-                        .loginPage("/user/login")       // login form
-                        .loginProcessingUrl("/user/login")      // 스프링이 낚아 챔 UserDetailService 구현 객체에서 처리해 주어야 함
-                        .usernameParameter("uid")
+
+                // 🧾 Form Login
+                .formLogin(form -> form
+                        .loginPage("/view/users/login")
+                        .loginProcessingUrl("/view/users/login")
+                        .usernameParameter("email")
                         .passwordParameter("pwd")
-                        .defaultSuccessUrl("/user/loginSuccess", true)      // 로그인 후 해야할 일
-                        .failureHandler(authenticationFailureHandler)       // 로그인 실패 (password 오류)
+                        .defaultSuccessUrl("/view/users/loginSuccess", true)
+                        .failureHandler(authenticationFailureHandler)
                         .permitAll()
                 )
-                .logout(auth ->auth
-                        .logoutUrl("/user/logout")
-                        .invalidateHttpSession(true)        // 로그아웃 시 session 삭제
+
+                // 🚪 Logout
+                .logout(logout -> logout
+                        .logoutUrl("/view/users/logout")
+                        .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
-                        .logoutSuccessUrl("/user/login")
+                        .logoutSuccessUrl("/view/users/login")
                 )
-                .oauth2Login(auth -> auth
-                        .loginPage("/user/login")
-                        // 1. 코드 받기 (인증) 2. 엑세스 토큰 (권한) 3. 사용자 프로필 정보 획득
-                        // 4. 3에서 받은 정보를 토대로 DB에 없으면 회원 가입
-                        // 5. provider가 제공 하는 정보
+
+                // 🌐 OAuth2 Login
+                .oauth2Login(oauth -> oauth
+                        .loginPage("/view/users/login")
                         .userInfoEndpoint(user -> user.userService(myOAuth2UserService))
-                        .defaultSuccessUrl("/user/loginSuccess", true)
+                        .defaultSuccessUrl("/view/users/loginSuccess", true)
+                )
+
+                // 🔥 JWT Filter 등록 (이게 핵심)
+                .addFilterBefore(
+                        jwtRequestFilter(),
+                        UsernamePasswordAuthenticationFilter.class
                 );
-        return httpSecurity.build();
+
+        return http.build();
     }
 
-    // JWT Filter Bean 등록
+    /**
+     * 🔐 JWT Filter Bean
+     */
     @Bean
     public JwtRequestFilter jwtRequestFilter() {
         return new JwtRequestFilter(jwtTokenUtil, myUserDetailsService);
     }
 
-    // Authentication Manager Bean 등록
+    /**
+     * 🔑 AuthenticationManager (JWT 로그인용)
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();

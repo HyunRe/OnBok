@@ -16,7 +16,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     // 특정 도서의 평균 평점 계산
-    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.book.bid = :bid")
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.book.id = :bookId")
     Double getAverageRatingByBookId(Long bookId);
 
     // 특정 도서의 리뷰 개수

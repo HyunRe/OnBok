@@ -26,7 +26,9 @@ public class MyUserDetailsService implements UserDetailsService {
             throw new ExpectedException(ErrorCode.USER_NOT_FOUND);
         }
 
-        log.info("login 시도: " + user.getId());
+        log.info("DB에서 가져온 암호화 비밀번호: " + user.getPwd());
+        log.info("login 시도 유저 ID: " + user.getId());
+
         return new MyUserDetails(user);
     }
 }

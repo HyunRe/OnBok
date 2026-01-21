@@ -4,7 +4,135 @@
   <header th:replace="~{fragments/base :: head}"></header>
   <style>
     td { text-align: center; }
+    .rating {
+      color: #ffc107;
+    }
+    .review-card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+    }
+    .star-rating {
+      display: inline-block;
+      font-size: 20px;
+    }
+    .star-rating-input {
+      font-size: 30px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .star-input {
+      color: #ddd;
+      transition: color 0.2s;
+    }
+    .star-input:hover,
+    .star-input.active {
+      color: #ffc107;
+    }
   </style>
+  <script>
+    // 리뷰 작성 폼 토글
+    function toggleReviewForm() {
+      const formContainer = document.getElementById('reviewFormContainer');
+      if (formContainer.style.display === 'none') {
+        formContainer.style.display = 'block';
+        formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else {
+        formContainer.style.display = 'none';
+      }
+    }
+
+    // 별점 선택
+    document.addEventListener('DOMContentLoaded', function() {
+      const stars = document.querySelectorAll('.star-input');
+      const ratingInput = document.getElementById('rating');
+
+      stars.forEach((star, index) => {
+        star.addEventListener('click', function() {
+          const value = parseInt(this.getAttribute('data-value'));
+          ratingInput.value = value;
+
+          // 모든 별 초기화
+          stars.forEach(s => {
+            s.classList.remove('active');
+            s.textContent = '☆';
+          });
+
+          // 선택된 별까지 채우기
+          for (let i = 0; i < value; i++) {
+            stars[i].classList.add('active');
+            stars[i].textContent = '★';
+          }
+        });
+
+        star.addEventListener('mouseenter', function() {
+          const value = parseInt(this.getAttribute('data-value'));
+          for (let i = 0; i < value; i++) {
+            stars[i].textContent = '★';
+          }
+        });
+      });
+
+      const starContainer = document.querySelector('.star-rating-input');
+      starContainer.addEventListener('mouseleave', function() {
+        const currentValue = parseInt(ratingInput.value);
+        stars.forEach((s, i) => {
+          if (i < currentValue) {
+            s.textContent = '★';
+          } else {
+            s.textContent = '☆';
+          }
+        });
+      });
+
+      // 리뷰 작성 폼 제출
+      const reviewForm = document.getElementById('reviewForm');
+      reviewForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const bookId = document.getElementById('bookId').value;
+        const rating = parseInt(document.getElementById('rating').value);
+        const content = document.getElementById('content').value;
+
+        if (rating === 0) {
+          alert('별점을 선택해주세요.');
+          return;
+        }
+
+        if (!content.trim()) {
+          alert('리뷰 내용을 입력해주세요.');
+          return;
+        }
+
+        // AJAX로 리뷰 등록
+        fetch('/api/reviews/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            bookId: parseInt(bookId),
+            rating: rating,
+            content: content
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('리뷰 등록에 실패했습니다.');
+          }
+          return response.json();
+        })
+        .then(data => {
+          alert('리뷰가 성공적으로 등록되었습니다!');
+          location.reload(); // 페이지 새로고침
+        })
+        .catch(error => {
+          alert('리뷰 등록 중 오류가 발생했습니다: ' + error.message);
+        });
+      });
+    });
+  </script>
 </head>
 <body>
 <div th:insert="~{fragments/base :: top}"></div>
@@ -19,8 +147,8 @@
       <main>
         <h3><strong>도서 상세보기</strong></h3>
         <hr>
-        <form action="/book/addItemToCart" method="post">
-          <input type="hidden" name="bid" th:value="${book.bid}">
+        <form action="/view/books/detail" method="post">
+          <input type="hidden" name="id" th:value="${book.id}">
           <table class="table">
             <tr>
               <td rowspan="5" style="width: 40%;">
@@ -55,7 +183,7 @@
             <tr>
               <td colspan="3">
                 <button type="submit" class="btn btn-primary my-2">카트에 담기</button>
-                <button type="button" class="btn btn-secondary my-2" onclick="location.href='/book/list'">목록으로</button>
+                <button type="button" class="btn btn-secondary my-2" onclick="location.href='/view/books/list'">목록으로</button>
               </td>
             </tr>
             <tr>
@@ -65,6 +193,107 @@
             </tr>
           </table>
         </form>
+
+        <!-- 리뷰 섹션 -->
+        <hr class="my-5">
+        <h4><strong>리뷰</strong></h4>
+
+        <!-- 평균 평점 -->
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="d-flex align-items-center">
+              <span class="rating" style="font-size: 2rem; margin-right: 10px;">
+                <span th:text="${#numbers.formatDecimal(averageRating, 1, 1)}">0.0</span>
+              </span>
+              <span class="star-rating">
+                <span th:each="i : ${#numbers.sequence(1, 5)}">
+                  <i th:class="${i <= averageRating ? 'fas fa-star rating' : 'far fa-star'}"></i>
+                </span>
+              </span>
+              <span class="ms-2">([[${reviewCount}]]개의 리뷰)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 리뷰 작성 버튼 -->
+        <div class="mb-3">
+          <button class="btn btn-primary" id="toggleReviewFormBtn" onclick="toggleReviewForm()">
+            <i class="fas fa-edit"></i> 리뷰 작성
+          </button>
+        </div>
+
+        <!-- 리뷰 작성 폼 (기본적으로 숨김) -->
+        <div id="reviewFormContainer" class="card mb-4" style="display: none;">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-pen"></i> 새 리뷰 작성</h5>
+          </div>
+          <div class="card-body">
+            <form id="reviewForm">
+              <input type="hidden" id="bookId" th:value="${book.id}">
+              <div class="mb-3">
+                <label for="rating" class="form-label">평점 *</label>
+                <div class="star-rating-input">
+                  <span class="star-input" data-value="1">☆</span>
+                  <span class="star-input" data-value="2">☆</span>
+                  <span class="star-input" data-value="3">☆</span>
+                  <span class="star-input" data-value="4">☆</span>
+                  <span class="star-input" data-value="5">☆</span>
+                  <input type="hidden" id="rating" name="rating" value="0">
+                </div>
+                <small class="text-muted">별을 클릭하여 평점을 선택하세요</small>
+              </div>
+              <div class="mb-3">
+                <label for="content" class="form-label">리뷰 내용 *</label>
+                <textarea class="form-control" id="content" name="content" rows="5" placeholder="이 책에 대한 솔직한 리뷰를 작성해주세요" required></textarea>
+              </div>
+              <div class="d-flex justify-content-end">
+                <button type="button" class="btn btn-secondary me-2" onclick="toggleReviewForm()">취소</button>
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-check"></i> 리뷰 등록
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- 리뷰 목록 -->
+        <div th:if="${reviews.isEmpty()}" class="alert alert-info">
+          아직 작성된 리뷰가 없습니다. 첫 번째 리뷰를 작성해보세요!
+        </div>
+
+        <div th:each="review : ${reviews}" class="review-card">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div>
+              <strong th:text="${review.userName}">사용자명</strong>
+              <span class="star-rating ms-2">
+                <span th:each="i : ${#numbers.sequence(1, 5)}">
+                  <i th:class="${i <= review.rating ? 'fas fa-star rating' : 'far fa-star'}"></i>
+                </span>
+              </span>
+            </div>
+            <small class="text-muted" th:text="${#temporals.format(review.createdAt, 'yyyy-MM-dd HH:mm')}">2024-01-01 12:00</small>
+          </div>
+          <p th:text="${review.content}">리뷰 내용입니다.</p>
+          <div th:if="${review.updatedAt != null && review.updatedAt != review.createdAt}">
+            <small class="text-muted">(수정됨: [[${#temporals.format(review.updatedAt, 'yyyy-MM-dd HH:mm')}]])</small>
+          </div>
+        </div>
+
+        <!-- 페이징 -->
+        <nav th:if="${reviewTotalPages > 1}">
+          <ul class="pagination justify-content-center">
+            <li class="page-item" th:classappend="${reviewCurrentPage == 1 ? 'disabled' : ''}">
+              <a class="page-link" th:href="@{/view/books/detail/{id}(id=${book.id}, reviewPage=${reviewCurrentPage - 1})}">이전</a>
+            </li>
+            <li class="page-item" th:each="i : ${#numbers.sequence(1, reviewTotalPages)}" th:classappend="${i == reviewCurrentPage ? 'active' : ''}">
+              <a class="page-link" th:href="@{/view/books/detail/{id}(id=${book.id}, reviewPage=${i})}" th:text="${i}">1</a>
+            </li>
+            <li class="page-item" th:classappend="${reviewCurrentPage == reviewTotalPages ? 'disabled' : ''}">
+              <a class="page-link" th:href="@{/view/books/detail/{id}(id=${book.id}, reviewPage=${reviewCurrentPage + 1})}">다음</a>
+            </li>
+          </ul>
+        </nav>
+
       </main>
     </div>
   </div>

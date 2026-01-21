@@ -8,6 +8,7 @@ import com.onbok.book_hub.common.pagination.PaginationInfo;
 import com.onbok.book_hub.common.annotation.CurrentUser;
 import com.onbok.book_hub.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,8 +21,7 @@ public class BookEsViewController {
     private final CsvFileReaderService csvFileReaderService;
 
     @GetMapping("/list")
-    public String list(@CurrentUser User user,
-                       @RequestParam(name="p", defaultValue = "1") int page,
+    public String list(@RequestParam(name="p", defaultValue = "1") int page,
                        @RequestParam(name="f", defaultValue = "title") String field,
                        @RequestParam(name="q", defaultValue = "") String query,
                        @RequestParam(name="sf", defaultValue = "title") String sortField,
@@ -59,11 +59,13 @@ public class BookEsViewController {
         return "bookEs/detail";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/insert")
     public String insertForm() {
         return "bookEs/insert";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/insert")
     public String insertProc(BookEs b) {
         BookEs bookEs = BookEs.builder()
@@ -71,12 +73,13 @@ public class BookEsViewController {
                 .price(b.getPrice()).imageUrl(b.getImageUrl()).summary(b.getSummary())
                 .build();
         bookEsService.insertBookEs(bookEs);
-        return "redirect:/bookEs/list";
+        return "redirect:/view/bookEs/list";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/delete/{bookId}")
     public String delete(@PathVariable String bookId) {
         bookEsService.deleteBookEs(bookId);
-        return "redirect:/bookEs/list";
+        return "redirect:/view/bookEs/list";
     }
 }

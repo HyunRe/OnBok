@@ -35,7 +35,8 @@ public class TossPaymentService {
     @Value("${toss.payment.secret.key}")
     private String SECRET_KEY;
 
-    private final String API_URL = "https://api.tosspayments.com/v1/payments/confirm";
+    @Value("${toss.payment.api.url}")
+    private String API_BASE_URL;
 
     public TossPayment findById(Long id) {
         return tossPaymentRepository.findById(id).orElseThrow(() -> new ExpectedException(ErrorCode.TOSS_PAYMENT_NOT_FOUND));
@@ -43,6 +44,8 @@ public class TossPaymentService {
 
     // 최종 결제 승인을 완료 API
     public String approvePayment(PaymentApproveRequestDto request) {
+        String confirmUrl = API_BASE_URL + "/v1/payments/confirm";
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBasicAuth(SECRET_KEY, "");
@@ -55,7 +58,7 @@ public class TossPaymentService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(API_URL, entity, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity(confirmUrl, entity, String.class);
             System.out.println("결제 승인 응답: " + response.getBody());
             return response.getBody();
         } catch (HttpClientErrorException e) {
@@ -69,8 +72,8 @@ public class TossPaymentService {
         }
     }
 
-    public void insertTossPayment(TossPayment tossPayment) {
-        tossPaymentRepository.save(tossPayment);
+    public TossPayment insertTossPayment(TossPayment tossPayment) {
+        return tossPaymentRepository.save(tossPayment);
     }
 
     /**
@@ -136,7 +139,7 @@ public class TossPaymentService {
 
     // 결제 취소 API
     public String cancelPayment(PaymentCancelRequestDto request) {
-        String cancelUrl = "https://api.tosspayments.com/v1/payments/" + request.getPaymentKey() + "/cancel";
+        String cancelUrl = API_BASE_URL + "/v1/payments/" + request.getPaymentKey() + "/cancel";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -162,7 +165,7 @@ public class TossPaymentService {
 
     // 부분 환불 또는 전액 환불 API
     public String refundPayment(PaymentRefundRequestDto request) {
-        String cancelUrl = "https://api.tosspayments.com/v1/payments/" + request.getPaymentKey() + "/cancel";
+        String cancelUrl = API_BASE_URL + "/v1/payments/" + request.getPaymentKey() + "/cancel";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

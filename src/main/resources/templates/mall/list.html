@@ -17,17 +17,24 @@
     function search() {
       const field = document.getElementById('field').value;
       const query = document.getElementById('query').value;
-      const uri = '/book/list?p=1' + '&f=' + field + '&q=' + query;
+      const uri = '/view/books/list?p=1' + '&f=' + field + '&q=' + query;
       location.href = encodeURI(uri);   // 한글 입력시 인코딩해서 전달
     }
     function addToCart(bid) {
       $.ajax({
         type: 'POST',
-        url: '/book/addToCart',
-        data: {bid: ''+bid},
-        success: function(count) {
-          alert('카트에 성공적으로 담았습니다.');
-          $('#cartCount').attr({'class': 'cart-count'}).html(count);
+        url: '/api/books/cart',
+        contentType: 'application/json',
+        data: JSON.stringify({
+          id: bid,
+          quantity: 1
+        }),
+        success: function(response) {
+          alert(response.data.message);
+          $('#cartCount').attr({'class': 'cart-count'}).html(response.data.currentCount);
+        },
+        error: function(xhr, status, error) {
+          alert('장바구니 담기에 실패했습니다. 로그인이 필요합니다.');
         }
       });
     }
@@ -50,7 +57,7 @@
               <h3>
                 <strong class="me-5">도서 쇼핑</strong>
                 <span style="font-size: 16px;">
-                    <a href="/cart"><i class="fa-solid fa-cart-shopping"></i> 카트 보기</a>
+                    <a href="/view/carts"><i class="fa-solid fa-cart-shopping"></i> 장바구니 보기</a>
                     <span id="cartCount" class="cart-count" th:classappend="${cartCount eq 0 ? 'd-none': ''}" th:text="${cartCount}">2</span>
                   </span>
               </h3>
@@ -80,7 +87,7 @@
         <hr>
         <div th:each="row : ${#numbers.sequence(0, bookList.size() - 1, 4)}" class="row">
           <div th:each="book : ${bookList.subList(row, row + 4 > bookList.size() ? bookList.size() : row + 4)}" class="col-3">
-            <div class="card mb-2" th:onclick="|location.href='@{/book/detail/{x}(x=${book.bid})}'|">
+            <div class="card mb-2" th:onclick="|location.href='@{/view/books/detail/{x}(x=${book.id})}'|">
               <img class="card-img-top" th:src="${book.imageUrl}" alt="Card image">
               <div class="card-body">
                 <h4 class="card-title" th:text="${book.title}">책 제목</h4>
@@ -88,7 +95,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                   <span th:text="|${#numbers.formatInteger(book.price, 0, 'COMMA')}원|">가격</span>
                   <button class="btn btn-primary btn-small"
-                          th:onclick="|event.stopPropagation(); addToCart(${book.bid})|">카트에 담기</a>
+                          th:onclick="|event.stopPropagation(); addToCart(${book.id})|">카트에 담기</a>
                 </div>
               </div>
             </div>
@@ -100,28 +107,28 @@
 
         <!-- pagination -->
         <ul class="pagination justify-content-center my-4">
-            <span th:if="${session.currentBookPage gt 10}">
-              <li class="page-item"><a class="page-link" th:href="@{/book/list(p=${startPage-1},f=${field},q=${query})}"><i class="fa-solid fa-less-than"></i></a></li>
+            <span th:if="${currentBookPage gt 10}">
+              <li class="page-item"><a class="page-link" th:href="@{/view/books/list(p=${startPage-1},f=${field},q=${query})}"><i class="fa-solid fa-less-than"></i></a></li>
             </span>
-          <span th:if="${session.currentBookPage le 10}">
+          <span th:if="${currentBookPage le 10}">
               <li class="page-item"><a class="page-link" href="#"><i class="fa-solid fa-less-than"></i></a></li>
             </span>
           <span th:each="page: ${pageList}">
               <span th:switch="${page}">
-                <th:block th:case="${session.currentBookPage}">
+                <th:block th:case="${currentBookPage}">
                   <li class="page-item active">
                     <a class="page-link" href="#">[[${page}]]</a>
                   </li>
                 </th:block>
                 <th:block th:case="*">
                   <li class="page-item">
-                    <a class="page-link" th:href="@{/book/list(p=${page},f=${field},q=${query})}">[[${page}]]</a>
+                    <a class="page-link" th:href="@{/view/books/list(p=${page},f=${field},q=${query})}">[[${page}]]</a>
                   </li>
                 </th:block>
               </span>
             </span>
           <span th:if="${totalPages gt endPage}">
-              <li class="page-item"><a class="page-link" th:href="@{/book/list(p=${endPage+1},f=${field},q=${query})}"><i class="fa-solid fa-greater-than"></i></a></li>
+              <li class="page-item"><a class="page-link" th:href="@{/view/books/list(p=${endPage+1},f=${field},q=${query})}"><i class="fa-solid fa-greater-than"></i></a></li>
             </span>
           <span th:if="${totalPages eq endPage}">
               <li class="page-item"><a class="page-link" href="#"><i class="fa-solid fa-greater-than"></i></a></li>

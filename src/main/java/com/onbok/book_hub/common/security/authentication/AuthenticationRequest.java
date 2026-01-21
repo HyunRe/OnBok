@@ -1,13 +1,12 @@
 package com.onbok.book_hub.common.security.authentication;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class AuthenticationRequest {
-    private String username;
-    public String password;
+    private String email;
+    public String pwd;
 }

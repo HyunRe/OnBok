@@ -16,7 +16,7 @@
         function search() {
           const field = document.getElementById('field').value;
           const query = document.getElementById('query').value;
-          const uri = '/bookEs/list?p=1' + '&f=' + field + '&q=' + query;
+          const uri = '/view/bookEs/list?p=1' + '&f=' + field + '&q=' + query;
           location.href = encodeURI(uri);   // 한글 입력시 인코딩해서 전달
         }
     </script>
@@ -37,8 +37,8 @@
                         <td style="width: 52%; text-align: left">
                             <h3>
                                 <strong class="me-5">도서 목록</strong>
-                                <span style="font-size: 16px;">
-                    <a href="/bookEs/insert"><i class="fa-solid fa-pen-to-square"></i> 도서 등록</a>
+                                <span style="font-size: 16px;" th:if="${isAuthenticated && currentUser.role.name() == 'ADMIN'}">
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#bookInsertModal"><i class="fa-solid fa-pen-to-square"></i> 도서 등록</a>
                   </span>
                             </h3>
                         </td>
@@ -71,13 +71,13 @@
                         <th style="width: 10%">이미지</th>
                         <th style="width: 38%">
                             제목
-                            <a th:href="@{/bookEs/list(p=1,f=${field},q=${query},sf='title',sd=${sortDirection == 'asc' ? 'desc' : 'asc'})}">
+                            <a th:href="@{/view/bookEs/list(p=1,f=${field},q=${query},sf='title',sd=${sortDirection == 'asc' ? 'desc' : 'asc'})}">
                                 <i th:classappend="${sortField == 'title' && sortDirection == 'asc' ? 'fa-solid fa-sort-down' : 'fa-solid fa-sort-up'}"></i>
                             </a>
                         </th>
                         <th style="width: 20%">
                             저자
-                            <a th:href="@{/bookEs/list(p=1,f=${field},q=${query},sf='author',sd=${sortDirection == 'asc' ? 'desc' : 'asc'})}">
+                            <a th:href="@{/view/bookEs/list(p=1,f=${field},q=${query},sf='author',sd=${sortDirection == 'asc' ? 'desc' : 'asc'})}">
                                 <i th:classappend="${sortField == 'author' && sortDirection == 'asc' ? 'fa-solid fa-sort-down' : 'fa-solid fa-sort-up'}"></i>
                             </a>
                         </th>
@@ -90,7 +90,7 @@
                             <img th:src="${bookEsDto.bookEs.imageUrl}" height="54">
                         </td>
                         <td>
-                            <a th:href="@{/bookEs/detail/{x}(x=${bookEsDto.bookEs.bookId}, q=${query})}">
+                            <a th:href="@{/view/bookEs/detail/{x}(x=${bookEsDto.bookEs.bookId}, q=${query})}">
                                 <span style="font-weight: bold;" th:text="${bookEsDto.bookEs.title}">트렌드 코리아</span>
                             </a>
                         </td>
@@ -106,39 +106,83 @@
                 <!-- pagination -->
                 <ul class="pagination justify-content-center my-4">
             <span th:if="${totalPages gt 10}">
-              <li class="page-item"><a class="page-link" th:href="@{/bookEs/list(p=1,f=${field},q=${query})}"><i class="fa-solid fa-angles-left"></i></a></li>
+              <li class="page-item"><a class="page-link" th:href="@{/view/bookEs/list(p=1,f=${field},q=${query})}"><i class="fa-solid fa-angles-left"></i></a></li>
             </span>
-                    <span th:if="${session.currentBookEsPage gt 10}">
-              <li class="page-item"><a class="page-link" th:href="@{/bookEs/list(p=${startPage-1},f=${field},q=${query})}"><i class="fa-solid fa-angle-left"></i></a></li>
+                    <span th:if="${currentBookEsPage gt 10}">
+              <li class="page-item"><a class="page-link" th:href="@{/view/bookEs/list(p=${startPage-1},f=${field},q=${query})}"><i class="fa-solid fa-angle-left"></i></a></li>
             </span>
-                    <span th:if="${session.currentBookEsPage le 10}">
+                    <span th:if="${currentBookEsPage le 10}">
               <li class="page-item"><a class="page-link" href="#"><i class="fa-solid fa-angle-left"></i></a></li>
             </span>
                     <span th:each="page: ${pageList}">
               <span th:switch="${page}">
-                <th:block th:case="${session.currentBookEsPage}">
+                <th:block th:case="${currentBookEsPage}">
                   <li class="page-item active">
                     <a class="page-link" href="#">[[${page}]]</a>
                   </li>
                 </th:block>
                 <th:block th:case="*">
                   <li class="page-item">
-                    <a class="page-link" th:href="@{/bookEs/list(p=${page},f=${field},q=${query})}">[[${page}]]</a>
+                    <a class="page-link" th:href="@{/view/bookEs/list(p=${page},f=${field},q=${query})}">[[${page}]]</a>
                   </li>
                 </th:block>
               </span>
             </span>
                     <span th:if="${totalPages gt endPage}">
-              <li class="page-item"><a class="page-link" th:href="@{/bookEs/list(p=${endPage+1},f=${field},q=${query})}"><i class="fa-solid fa-angle-right"></i></a></li>
+              <li class="page-item"><a class="page-link" th:href="@{/view/bookEs/list(p=${endPage+1},f=${field},q=${query})}"><i class="fa-solid fa-angle-right"></i></a></li>
             </span>
                     <span th:if="${totalPages eq endPage}">
               <li class="page-item"><a class="page-link" href="#"><i class="fa-solid fa-angle-right"></i></a></li>
             </span>
                     <span th:if="${totalPages gt 10}">
-              <li class="page-item"><a class="page-link" th:href="@{/bookEs/list(p=${totalPages},f=${field},q=${query})}"><i class="fa-solid fa-angles-right"></i></a></li>
+              <li class="page-item"><a class="page-link" th:href="@{/view/bookEs/list(p=${totalPages},f=${field},q=${query})}"><i class="fa-solid fa-angles-right"></i></a></li>
             </span>
                 </ul>
             </main>
+        </div>
+    </div>
+</div>
+
+<!-- 도서 등록 모달 -->
+<div class="modal fade" id="bookInsertModal" tabindex="-1" aria-labelledby="bookInsertModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="bookInsertModalLabel"><i class="fa-solid fa-book"></i> 도서 등록</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="/view/bookEs/insert" method="post">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label"><i class="fa-solid fa-heading"></i> 제목</label>
+                        <input type="text" class="form-control" id="title" name="title" placeholder="책 제목을 입력하세요" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="author" class="form-label"><i class="fa-solid fa-user-pen"></i> 저자</label>
+                        <input type="text" class="form-control" id="author" name="author" placeholder="저자명을 입력하세요" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="company" class="form-label"><i class="fa-solid fa-building"></i> 출판사</label>
+                        <input type="text" class="form-control" id="company" name="company" placeholder="출판사명을 입력하세요" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="price" class="form-label"><i class="fa-solid fa-won-sign"></i> 가격</label>
+                        <input type="number" class="form-control" id="price" name="price" placeholder="가격을 입력하세요" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="imageUrl" class="form-label"><i class="fa-solid fa-image"></i> 이미지 URL</label>
+                        <input type="url" class="form-control" id="imageUrl" name="imageUrl" placeholder="이미지 URL을 입력하세요">
+                    </div>
+                    <div class="mb-3">
+                        <label for="summary" class="form-label"><i class="fa-solid fa-align-left"></i> 요약</label>
+                        <textarea class="form-control" id="summary" name="summary" rows="5" placeholder="책 요약을 입력하세요"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fa-solid fa-xmark"></i> 취소</button>
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> 등록</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

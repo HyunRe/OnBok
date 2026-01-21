@@ -3,7 +3,6 @@ package com.onbok.book_hub.review.presentation.api;
 import com.onbok.book_hub.common.annotation.CurrentUser;
 import com.onbok.book_hub.common.response.OnBokResponse;
 import com.onbok.book_hub.review.application.ReviewCommandService;
-import com.onbok.book_hub.review.domain.model.Review;
 import com.onbok.book_hub.review.dto.request.ReviewCreateRequestDto;
 import com.onbok.book_hub.review.dto.request.ReviewUpdateRequestDto;
 import com.onbok.book_hub.user.domain.model.User;
@@ -23,18 +22,18 @@ public class ReviewApiController {
 
     @Operation(summary = "리뷰 작성", description = "도서 ID와 평점, 내용을 입력하여 새로운 리뷰를 등록합니다")
     @PostMapping("/create")
-    public OnBokResponse<Review> createReview(@CurrentUser User user,
+    public OnBokResponse<String> createReview(@CurrentUser User user,
                                               @Valid @RequestBody ReviewCreateRequestDto reviewCreateRequestDto) {
-        Review review = reviewCommandService.createReview(reviewCreateRequestDto.getBookId(), user.getId(), reviewCreateRequestDto.getRating(), reviewCreateRequestDto.getContent());
-        return OnBokResponse.success(review, HttpStatus.CREATED);
+        reviewCommandService.createReview(reviewCreateRequestDto.getBookId(), user.getId(), reviewCreateRequestDto.getRating(), reviewCreateRequestDto.getContent());
+        return OnBokResponse.success("리뷰가 등록되었습니다.", HttpStatus.CREATED);
     }
 
     @Operation(summary = "리뷰 수정", description = "기존에 작성한 리뷰의 평점과 내용을 수정합니다")
     @PostMapping("/update")
-    public OnBokResponse<Review> updateReview(@CurrentUser User user,
+    public OnBokResponse<String> updateReview(@CurrentUser User user,
                                               @Valid @RequestBody ReviewUpdateRequestDto reviewUpdateRequestDto) {
-        Review review = reviewCommandService.updateReview(user, reviewUpdateRequestDto.getId(), reviewUpdateRequestDto.getRating(), reviewUpdateRequestDto.getContent());
-        return OnBokResponse.success(review, HttpStatus.CREATED);
+        reviewCommandService.updateReview(user, reviewUpdateRequestDto.getId(), reviewUpdateRequestDto.getRating(), reviewUpdateRequestDto.getContent());
+        return OnBokResponse.success("리뷰가 수정되었습니다.");
     }
 
     @Operation(summary = "리뷰 삭제", description = "리뷰 ID를 통해 등록된 리뷰를 삭제합니다")

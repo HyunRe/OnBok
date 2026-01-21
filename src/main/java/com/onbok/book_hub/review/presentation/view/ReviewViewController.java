@@ -21,7 +21,7 @@ public class ReviewViewController {
     /**
      * 특정 도서의 리뷰 목록 조회 (페이징)
      */
-    @GetMapping("/book/{bid}")
+    @GetMapping("/book/{bookId}")
     public String getReviewsByBook(@PathVariable Long bookId,
                                    @RequestParam(defaultValue = "1") int page,
                                    Model model) {
@@ -29,11 +29,13 @@ public class ReviewViewController {
         Double avgRating = reviewQueryService.getAverageRating(bookId);
         long reviewCount = reviewQueryService.getReviewCount(bookId);
 
+        model.addAttribute("bookId", bookId);
         model.addAttribute("reviews", reviews.getContent());
         model.addAttribute("totalPages", reviews.getTotalPages());
         model.addAttribute("currentPage", page);
         model.addAttribute("averageRating", avgRating);
         model.addAttribute("reviewCount", reviewCount);
+        model.addAttribute("menu", "book");
 
         return "review/list";
     }
@@ -45,6 +47,7 @@ public class ReviewViewController {
     public String getMyReviews(@CurrentUser User user, Model model) {
         List<ReviewResponseDto> reviews = reviewQueryService.getReviewsByUser(user.getId());
         model.addAttribute("reviews", reviews);
+        model.addAttribute("menu", "review");
         return "review/my-reviews";
     }
 }

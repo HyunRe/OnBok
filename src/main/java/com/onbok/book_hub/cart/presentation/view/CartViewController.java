@@ -4,6 +4,8 @@ import com.onbok.book_hub.cart.application.CartCalculationService;
 import com.onbok.book_hub.cart.application.CartService;
 import com.onbok.book_hub.cart.domain.model.Cart;
 import com.onbok.book_hub.common.annotation.CurrentUser;
+import com.onbok.book_hub.delivery.application.DeliveryAddressService;
+import com.onbok.book_hub.delivery.dto.DeliveryAddressDto;
 import com.onbok.book_hub.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +23,8 @@ import java.util.Map;
 public class CartViewController {
     private final CartService cartService;
     private final CartCalculationService cartCalculationService;
+    private final DeliveryAddressService deliveryAddressService;
+
     @Value("${toss.payment.client.key}")
     private String TOSS_CLIENT_KEY;
 
@@ -29,9 +33,19 @@ public class CartViewController {
         List<Cart> cartList = cartService.getCartItemsByUser(user.getId());
         Map<String, Object> summary = cartCalculationService.calculateCartSummary(cartList);
 
-        model.addAttribute("cartList", cartList);
+        // Cart 엔티티를 CartResponseDto로 변환
+        List<com.onbok.book_hub.cart.dto.response.CartResponseDto> cartDtoList = cartList.stream()
+                .map(com.onbok.book_hub.cart.dto.response.CartResponseDto::from)
+                .toList();
+
+        // 배송지 목록 조회
+        List<DeliveryAddressDto> deliveryAddresses = deliveryAddressService.getUserDeliveryAddresses(user);
+
+        model.addAttribute("cartDtoList", cartDtoList);
         model.addAllAttributes(summary);
         model.addAttribute("TOSS_CLIENT_KEY", TOSS_CLIENT_KEY);
+        model.addAttribute("user", user); // 사용자 정보 추가
+        model.addAttribute("deliveryAddresses", deliveryAddresses); // 배송지 목록 추가
         return "cart/cart";
     }
 }
