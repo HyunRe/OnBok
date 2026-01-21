@@ -6,6 +6,7 @@ import com.onbok.book_hub.common.response.OnBokResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,6 +23,7 @@ public class BookEsApiController {
     private final CsvFileReaderService csvFileReaderService;
 
     @Operation(summary = "초기 데이터 적재", description = "CSV 파일을 읽어 일래스틱서치에 인덱싱합니다")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/yes24")
     public OnBokResponse<String> yes24() {
         csvFileReaderService.csvFileToElasticSearch();

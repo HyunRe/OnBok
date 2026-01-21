@@ -1,0 +1,92 @@
+spring:
+  config:
+    import: optional:file:./src/main/resources/application-secret.yaml
+
+  # 데이터베이스 설정 (MariaDB)
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://localhost:3306/book_hub?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&createDatabaseIfNotExist=true
+    username: root
+    # password는 application-secret.yaml에서 설정
+
+  # JPA 설정
+  jpa:
+    database: MYSQL
+    database-platform: org.hibernate.dialect.MariaDBDialect
+    hibernate:
+      ddl-auto: update  # 개발 환경: update, 운영 환경: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        default_batch_fetch_size: 100
+
+  # ElasticSearch 설정
+  elasticsearch:
+    uris: http://localhost:9200
+    connection-timeout: 5s
+    socket-timeout: 60s
+
+  # 서버 설정
+  server:
+    port: 8080
+    servlet:
+      context-path: /
+      encoding:
+        charset: UTF-8
+        enabled: true
+        force: true
+
+  # Thymeleaf 설정
+  thymeleaf:
+    cache: false  # 개발 시 캐시 비활성화
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+
+  # 파일 업로드 설정
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# 파일 업로드 경로 설정
+file:
+  upload:
+    path: ./uploads
+    url-prefix: http://localhost:8080/uploads
+
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    com.onbok.book_hub: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.security: DEBUG
+    org.elasticsearch.client: DEBUG
+
+# Swagger 설정
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+
+# 애플리케이션 설정
+application:
+  name: OnBok Book-Hub
+  version: 1.1.0
+
+# Toss Payments 설정
+toss:
+  payment:
+    api:
+      url: https://api.tosspayments.com

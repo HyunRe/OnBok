@@ -9,8 +9,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 @Entity
 @Table(name = "users")
 @Getter
@@ -20,24 +18,31 @@ public class User extends BaseTime {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "pwd")
     private String pwd;
-    private String uname;
-    private String email;
-    private LocalDate regDate;
-    private String role;
 
-    // 외부 인증 서비스에 사용
-    private String provider;
+    @Column(name = "uname")
+    private String uname;
+
+    @Column(name = "email")
+    private String email;
+
+    @Column(name = "role")
+    @Enumerated(EnumType.STRING)
+    private Role role = Role.USER;
+
+    @Column(name = "provider")
+    @Enumerated(EnumType.STRING)
+    private LoginProvider loginProvider;
+
     private String profileUrl;
 
     @Builder
-    public User(String pwd, String uname, String email, LocalDate regDate, String role, String provider, String profileUrl) {
+    public User(String pwd, String uname, String email, LoginProvider loginProvider, String profileUrl) {
         this.pwd = pwd;
         this.uname = uname;
         this.email = email;
-        this.regDate = regDate;
-        this.role = role;
-        this.provider = provider;
+        this.loginProvider = loginProvider;
         this.profileUrl = profileUrl;
     }
 
@@ -50,11 +55,8 @@ public class User extends BaseTime {
     }
 
     // 프로필 정보 수정 (예시: 이름, 프로필 이미지)
-    public void updateProfile(String uname, String email, String profileUrl, String role, String provider) {
+    public void updateProfile(String uname, String profileUrl) {
         this.uname = uname;
-        this.email = email;
         this.profileUrl = profileUrl;
-        this.role = role;
-        this.provider = provider;
     }
 }

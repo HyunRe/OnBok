@@ -11,8 +11,8 @@
 <body style="margin: 50px;">
   <h1>주문 목록
     <span style="font-size: 16px; margin-left: 100px;">
-      <a th:href="@{/order/bookStat}">도서판매 통계보기</a>&nbsp;&nbsp;&nbsp;
-      <a th:href="@{/user/logout}">로그아웃</a>
+      <a th:href="@{/view/orders/bookStat}">도서판매 통계보기</a>&nbsp;&nbsp;&nbsp;
+      <a th:href="@{/view/users/logout}">로그아웃</a>
     </span>
   </h1>
   <hr>
@@ -29,14 +29,14 @@
     </tr>
     <tr th:each="order: ${orderList}">
       <td th:text="${orderStat.count}">1</td>
-      <td th:text="${order.oid}">1</td>
+      <td th:text="${order.id}">1</td>
       <td>[[${order.user.uid}]]</td>
       <td>[[${order.user.uname}]]</td>
       <td>[[${orderTitleList.get(orderStat.index)}]]</td>
       <td>[[${#temporals.format(order.orderDateTime, 'yy-MM-dd HH:mm')}]]</td>
       <td th:text="${order.totalAmount}">115000</td>
       <td>
-        <button>상세보기</button>
+        <a th:href="@{/view/orders/detail/{id}(id=${order.id})}" class="btn btn-sm btn-primary">상세보기</a>
       </td>
     </tr>
     <tr>

@@ -14,6 +14,7 @@ package com.onbok.book_hub.common.security.jwt;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -23,7 +24,8 @@ import java.util.function.Function;
 
 @Component
 public class JwtTokenUtil {
-    private String SECRET_KEY = "on_bok_secret_key_1110101010010";       // 서버에서만 알고 있는 비밀키
+    @Value("${jwt.secret}")
+    private String SECRET_KEY;       // 서버에서만 알고 있는 비밀키 (application-secret.yaml에서 관리)
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJwt(token).getBody();

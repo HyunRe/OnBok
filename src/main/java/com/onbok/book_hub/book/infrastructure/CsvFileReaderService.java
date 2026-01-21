@@ -23,7 +23,7 @@ public class CsvFileReaderService {
     private final BookCommandService bookCommandService;
     private final BookEsService bookEsService;
 
-    public void csvFileToH2() {
+    public void csvFileToDB() {
         try {
             Resource resource = resourceLoader.getResource("classpath:/static/data/20241114_yes24_국내도서_새로나온_상품.csv");
             try (Reader reader = new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8);

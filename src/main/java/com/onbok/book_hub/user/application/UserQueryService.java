@@ -25,10 +25,17 @@ public class UserQueryService {
     }
 
     /**
-     * 이메일로 사용자 조회
+     * 이메일로 사용자 조회 (없으면 예외 발생)
      */
     public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElseThrow(() -> new ExpectedException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    /**
+     * 이메일로 사용자 조회 (Optional 반환)
+     */
+    public User findByEmailOrNull(String email) {
+        return userRepository.findByEmail(email).orElse(null);
     }
 
     /**

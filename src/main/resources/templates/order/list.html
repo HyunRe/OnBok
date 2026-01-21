@@ -28,9 +28,9 @@
             <th>결제 금액</th>
           </tr>
           <tr th:each="order: ${orderList}">
-            <td style="text-align: center;" th:text="${order.oid}">1</td>
+            <td style="text-align: center;" th:text="${order.id}">1</td>
             <td>
-              <a th:href="@{/order/detail/{x}(x=${order.oid})}">
+              <a th:href="@{/view/orders/detail/{x}(x=${order.id})}">
                 <span style="font-weight: bold;" th:text="${orderTitleList.get(orderStat.index)}">책 외 1종</span>
               </a>
             </td>

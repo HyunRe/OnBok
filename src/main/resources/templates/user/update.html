@@ -1,31 +1,241 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <style>
-    input { padding: 3px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사용자 수정</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin-top: 50px;
+        }
+        .card {
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .profile-image-preview {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #dee2e6;
+            margin: 20px auto;
+            display: block;
+        }
+        .upload-option {
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .upload-option:hover {
+            border-color: #0d6efd;
+            background-color: #f8f9fa;
+        }
+        .upload-option.active {
+            border-color: #0d6efd;
+            background-color: #e7f1ff;
+        }
+        .upload-section {
+            display: none;
+        }
+        .upload-section.active {
+            display: block;
+        }
+    </style>
 </head>
-<body style="margin: 50px;">
-  <h1>사용자 수정</h1>
-  <hr>
-  <form action="/user/update" method="post">
-    <input type="hidden" name="uid" th:value="${user.uid}"><br><br>
-    <input type="text" th:value="${user.uid}" disabled><br><br>
-    <input type="password" name="pwd" placeholder="패스워드"><br><br>
-    <input type="password" name="pwd2" placeholder="패스워드 확인"><br><br>
-    <input type="text" name="uname" th:value="${user.uname}"><br><br>
-    <input type="text" name="email" th:value="${user.email}"><br><br>
-    <input type="text" name="profileUrl" th:value="${user.profileUrl}"><br><br>
-    <select name="role">
-      <option value="ROLE_USER">사용자 권한</option>
-      <option value="ROLE_ADMIN">관리자 권한</option>
-    </select><br><br>
-    <input type="text" name="provider" th:value="${user.provider}"><br><br>
-    <input type="text" th:value="${user.regDate}" disabled><br><br>
-    <input type="submit" value="수정">
-  </form>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">사용자 정보 수정</h4>
+        </div>
+        <div class="card-body">
+            <form id="updateForm" action="/view/users/update" method="post">
+                <input type="hidden" name="id" th:value="${user.id}">
+                <input type="hidden" name="profileUrl" id="profileUrlInput" th:value="${user.profileUrl}">
+
+                <!-- 프로필 이미지 미리보기 -->
+                <div class="text-center mb-4">
+                    <img id="profileImagePreview"
+                         th:src="${user.profileUrl != null && user.profileUrl != '' ? user.profileUrl : 'https://via.placeholder.com/150'}"
+                         alt="프로필 이미지"
+                         class="profile-image-preview">
+                </div>
+
+                <!-- 프로필 이미지 업로드 방식 선택 -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">프로필 이미지 변경</label>
+
+                    <!-- S3 URL 입력 옵션 -->
+                    <div class="upload-option" onclick="selectUploadType('s3')">
+                        <input type="radio" name="uploadType" id="uploadTypeS3" value="s3" checked>
+                        <label for="uploadTypeS3" class="ms-2">
+                            <strong>S3 URL 입력</strong>
+                            <small class="text-muted d-block">이미 업로드된 S3 이미지 URL을 입력하세요</small>
+                        </label>
+                    </div>
+
+                    <!-- 로컬 파일 업로드 옵션 -->
+                    <div class="upload-option" onclick="selectUploadType('local')">
+                        <input type="radio" name="uploadType" id="uploadTypeLocal" value="local">
+                        <label for="uploadTypeLocal" class="ms-2">
+                            <strong>로컬 파일 업로드</strong>
+                            <small class="text-muted d-block">컴퓨터에서 이미지 파일을 선택하세요</small>
+                        </label>
+                    </div>
+
+                    <!-- S3 URL 입력 섹션 -->
+                    <div id="s3UrlSection" class="upload-section active mt-3">
+                        <input type="text" id="s3UrlInput" class="form-control"
+                               placeholder="https://s3.amazonaws.com/..."
+                               th:value="${user.profileUrl}">
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="applyS3Url()">
+                            미리보기
+                        </button>
+                    </div>
+
+                    <!-- 로컬 파일 업로드 섹션 -->
+                    <div id="localFileSection" class="upload-section mt-3">
+                        <input type="file" id="localFileInput" class="form-control"
+                               accept="image/*" onchange="uploadLocalFile()">
+                        <small class="text-muted">JPG, PNG, GIF 형식 지원 (최대 10MB)</small>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- 기본 정보 -->
+                <div class="mb-3">
+                    <label class="form-label">ID</label>
+                    <input type="text" class="form-control" th:value="${user.id}" disabled>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">패스워드</label>
+                    <input type="password" name="pwd" class="form-control"
+                           placeholder="변경할 패스워드 (변경하지 않으려면 비워두세요)">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">패스워드 확인</label>
+                    <input type="password" name="pwd2" class="form-control"
+                           placeholder="패스워드 확인">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">이름 <span class="text-danger">*</span></label>
+                    <input type="text" name="uname" class="form-control"
+                           th:value="${user.uname}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">이메일</label>
+                    <input type="text" class="form-control" th:value="${user.email}" disabled>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">권한</label>
+                    <input type="text" class="form-control" th:value="${user.role.name()}" disabled>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">로그인 제공자</label>
+                    <input type="text" class="form-control" th:value="${user.loginProvider.name()}" disabled>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">가입일</label>
+                    <input type="text" class="form-control"
+                           th:value="${#temporals.format(user.createdAt, 'yyyy-MM-dd HH:mm:ss')}" disabled>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">수정</button>
+                    <button type="button" class="btn btn-secondary"
+                            onclick="location.href='/view/users/profile'">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 업로드 방식 선택
+    function selectUploadType(type) {
+        // 라디오 버튼 체크
+        document.getElementById('uploadTypeS3').checked = (type === 's3');
+        document.getElementById('uploadTypeLocal').checked = (type === 'local');
+
+        // 옵션 스타일 변경
+        document.querySelectorAll('.upload-option').forEach(opt => opt.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+
+        // 섹션 표시/숨김
+        document.getElementById('s3UrlSection').classList.toggle('active', type === 's3');
+        document.getElementById('localFileSection').classList.toggle('active', type === 'local');
+    }
+
+    // S3 URL 미리보기
+    function applyS3Url() {
+        const url = document.getElementById('s3UrlInput').value.trim();
+        if (url) {
+            document.getElementById('profileImagePreview').src = url;
+            document.getElementById('profileUrlInput').value = url;
+        } else {
+            alert('S3 URL을 입력해주세요.');
+        }
+    }
+
+    // 로컬 파일 업로드
+function uploadLocalFile() {
+        const fileInput = document.getElementById('localFileInput');
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const preview = document.getElementById('profileImagePreview');
+        preview.style.opacity = '0.5';
+
+        fetch('/api/images/upload/local', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(result => {
+            // [중요] OnBokResponse의 필드인 status와 data를 사용해야 합니다.
+            if (result.status === 200 && result.data) {
+                const imageUrl = result.data.url;
+                preview.src = imageUrl;
+                preview.style.opacity = '1';
+                document.getElementById('profileUrlInput').value = imageUrl;
+                alert('이미지가 업로드되었습니다.');
+            } else {
+                // [중요] 에러 메시지는 errorMessage 필드에 담겨 있습니다.
+                alert('업로드 실패: ' + (result.errorMessage || '응답 형식 오류'));
+                preview.style.opacity = '1';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('업로드 중 오류가 발생했습니다.');
+            preview.style.opacity = '1';
+        });
+    }
+
+    // 페이지 로드 시 초기화
+    document.addEventListener('DOMContentLoaded', function() {
+        // S3 옵션이 기본 선택되도록
+        document.querySelector('.upload-option').classList.add('active');
+    });
+</script>
 </body>
 </html>

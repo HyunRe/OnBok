@@ -10,7 +10,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 주문 조회 전용 Service
@@ -46,6 +49,25 @@ public class OrderQueryService {
             orderTitleList.add(title);
         }
         return orderTitleList;
+    }
+
+    /**
+     * 전체 주문 목록 조회
+     */
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
+    }
+
+    /**
+     * 주문 상태별 통계
+     */
+    public Map<String, Long> getOrderStatisticsByStatus() {
+        List<Order> allOrders = orderRepository.findAll();
+        return allOrders.stream()
+                .collect(Collectors.groupingBy(
+                        order -> order.getStatus().name(),
+                        Collectors.counting()
+                ));
     }
 
     /**

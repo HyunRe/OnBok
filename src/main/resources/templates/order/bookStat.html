@@ -11,8 +11,8 @@
 <body style="margin: 50px;">
   <h1>도서 판매 통계
     <span style="font-size: 16px; margin-left: 100px;">
-      <a th:href="@{/order/listAll}">주문목록 보기</a>&nbsp;&nbsp;&nbsp;
-      <a th:href="@{/user/logout}">로그아웃</a>
+      <a th:href="@{/view/orders/listAll}">주문목록 보기</a>&nbsp;&nbsp;&nbsp;
+      <a th:href="@{/view/users/logout}">로그아웃</a>
     </span>
   </h1>
   <hr>
@@ -28,7 +28,7 @@
     </tr>
     <tr th:each="bs: ${bookStatList}">
       <td th:text="${bsStat.count}">1</td>
-      <td th:text="${bs.bid}">1</td>
+      <td th:text="${bs.id}">1</td>
       <td th:text="${bs.title}">제목</td>
       <td th:text="${bs.company}">출판사</td>
       <td th:text="${bs.unitPrice}">단가</td>

@@ -10,6 +10,9 @@ public enum ErrorCode {
     // 사용자
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 사용자입니다."),
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "잘못된 비밀번호 형식입니다."),
+    DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
+    PASSWORD_TOO_SHORT(HttpStatus.BAD_REQUEST, "비밀번호는 최소 4자 이상이어야 합니다."),
+    UNSUPPORTED_OAUTH2_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth2 제공자입니다."),
 
     // 책
     BOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 책입니다."),
@@ -22,9 +25,12 @@ public enum ErrorCode {
 
     // 주소
     DELIVERY_ADRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 주소입니다."),
+    DELIVERY_ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 배송지입니다."),
 
     // 주문
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 주문입니다."),
+    UNAUTHORIZED_ACCESS(HttpStatus.FORBIDDEN, "접근 권한이 없습니다."),
+    UNAUTHORIZED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
 
     // 결제
     TOSS_PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 결제입니다."),

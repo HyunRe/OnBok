@@ -11,7 +11,10 @@ import com.onbok.book_hub.cart.application.CartService;
 import com.onbok.book_hub.cart.domain.model.Cart;
 import com.onbok.book_hub.cart.dto.request.CartAddRequestDto;
 import com.onbok.book_hub.common.annotation.CurrentUser;
+import com.onbok.book_hub.review.application.ReviewQueryService;
+import com.onbok.book_hub.review.dto.response.ReviewResponseDto;
 import com.onbok.book_hub.user.domain.model.User;
+import org.springframework.data.domain.Page;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -29,6 +32,7 @@ public class BookViewController {
     private final BookQueryService bookQueryService;
     private final BookViewService bookViewService;
     private final CartService cartService;
+    private final ReviewQueryService reviewQueryService;
 
     @GetMapping("/list")
     public String list(@CurrentUser User user,
@@ -62,10 +66,24 @@ public class BookViewController {
     @GetMapping("/detail/{id}")
     public String detail(@PathVariable Long id,
                          @RequestParam(name="q", defaultValue = "") String query,
+                         @RequestParam(name="reviewPage", defaultValue = "1") int reviewPage,
                          Model model) {
         Book book = bookQueryService.findById(id);
         book = bookViewService.highlightSummary(book, query);
+
+        // 리뷰 데이터 조회
+        Page<ReviewResponseDto> reviews = reviewQueryService.getReviewsByBook(id, reviewPage);
+        Double avgRating = reviewQueryService.getAverageRating(id);
+        long reviewCount = reviewQueryService.getReviewCount(id);
+
         model.addAttribute("book", book);
+        model.addAttribute("reviews", reviews.getContent());
+        model.addAttribute("reviewTotalPages", reviews.getTotalPages());
+        model.addAttribute("reviewCurrentPage", reviewPage);
+        model.addAttribute("averageRating", avgRating != null ? avgRating : 0.0);
+        model.addAttribute("reviewCount", reviewCount);
+        model.addAttribute("menu", "book");
+
         return "mall/detail";
     }
 
@@ -77,21 +95,34 @@ public class BookViewController {
     @PostMapping("/insert")
     public String insertProc(Book book) {
         bookCommandService.insertBook(book);
-        return "redirect:/book/list";
+        return "redirect:/view/books/list";
     }
 
-    @PostMapping("/addItemToCart")
+    @PostMapping("/detail")
     public String addItemToCart(@CurrentUser User user,
-                                @Valid @RequestBody CartAddRequestDto cartAddRequestDto) {
-        if (cartAddRequestDto.getQuantity() > 0)
-            cartService.addToCart(user.getId(), cartAddRequestDto.getId(), cartAddRequestDto.getQuantity());
-        return "redirect:/book/list";
+                                @RequestParam("id") Long bookId,
+                                @RequestParam("quantity") int quantity,
+                                Model model) {
+        try {
+            if (quantity > 0) {
+                cartService.addToCart(user.getId(), bookId, quantity);
+                model.addAttribute("msg", "장바구니에 담겼습니다.");
+                model.addAttribute("url", "/view/books/list");
+            } else {
+                model.addAttribute("msg", "수량을 선택해주세요.");
+                model.addAttribute("url", "/view/books/detail/" + bookId);
+            }
+        } catch (Exception e) {
+            model.addAttribute("msg", "장바구니 담기에 실패했습니다: " + e.getMessage());
+            model.addAttribute("url", "/view/books/detail/" + bookId);
+        }
+        return "common/alertMsg";
     }
 
     // 초기 데이터
     @GetMapping("/yes24")
     public String yes24() {
-        csvFileReaderService.csvFileToH2();
-        return "redirect:/book/list";
+        csvFileReaderService.csvFileToDB();
+        return "redirect:/view/books/list";
     }
 }

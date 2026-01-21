@@ -35,7 +35,7 @@ public class PaymentApiController {
             return OnBokResponse.success("Webhook 처리 완료");
         } catch (Exception e) {
             log.error("Webhook 처리 실패", e);
-            return OnBokResponse.error("Webhook 처리 실패: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return OnBokResponse.error(HttpStatus.INTERNAL_SERVER_ERROR,"Webhook 처리 실패: " + e.getMessage());
         }
     }
 

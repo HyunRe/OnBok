@@ -23,7 +23,6 @@
           <table class="table">
             <tr>
               <th style="width: 8%;">사진</th>
-              <th style="width: 20%;">uid</th>
               <th style="width: 14%;">이름</th>
               <th style="width: 18%;">이메일</th>
               <th style="width: 10%;">등록일</th>
@@ -35,15 +34,14 @@
               <td>
                 <img th:src="${user.profileUrl}" alt="picture" height="48" style="border-radius: 50%;">
               </td>
-              <td th:text="${user.uid}">james</td>
               <td th:text="${user.uname}">제임스</td>
               <td th:text="${user.email}">james@gmail.com</td>
               <td th:text="${user.regDate}">2024-09-26</td>
               <td th:text="${#strings.substring(user.role, 5)}">ROLE_USER</td>
               <td th:text="${user.provider}">Local</td>
               <td>
-                <a th:href="@{/user/update/{x}(x=${user.uid})}"><i class="fa-solid fa-pencil"></i></a>
-                <a th:href="@{/user/delete/{x}(x=${user.uid})}"><i class="fa-solid fa-user-minus"></i></a>
+                <a th:href="@{/view/users/update/{x}(x=${user.id})}"><i class="fa-solid fa-pencil"></i></a>
+                <a th:href="@{/view/users/delete/{x}(x=${user.id})}"><i class="fa-solid fa-user-minus"></i></a>
               </td>
             </tr>
           </table>

@@ -33,12 +33,12 @@ public class OrderCommandService {
     private final OrderQueryService orderQueryService;
 
     @Transactional
-    public Order createOrder(Long userId, List<Cart> cartList, TossPayment tossPayment, DeliveryAddress address) {
+    public Order createOrder(Long userId, List<Cart> cartList, TossPayment tossPayment, Long deliveryAddressId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExpectedException(ErrorCode.USER_NOT_FOUND));
 
-        // 1. 배송지 정보 저장
-        DeliveryAddress savedAddress = deliveryAddressService.insertDeliveryAddress(user, address);
+        // 1. 기존 배송지 조회 (배송지 관리에서 미리 등록된 배송지 사용)
+        DeliveryAddress deliveryAddress = deliveryAddressService.findById(deliveryAddressId);
 
         // 2. 주문 항목(OrderItem) 리스트 먼저 생성
         List<OrderItem> orderItems = new ArrayList<>();
@@ -58,7 +58,7 @@ public class OrderCommandService {
         Order order = Order.builder()
                 .user(user)
                 .totalAmount(tossPayment.getTotalPayment())
-                .deliveryAddress(savedAddress)
+                .deliveryAddress(deliveryAddress)
                 .tossPayment(tossPayment)
                 .orderItems(orderItems)
                 .build();
