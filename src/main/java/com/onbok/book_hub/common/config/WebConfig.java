@@ -4,10 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.File;
-import java.nio.file.Paths;
 
 @Configuration
 @Slf4j
@@ -32,5 +32,12 @@ public class WebConfig implements WebMvcConfigurer {
         // 업로드된 파일을 /uploads/** URL로 접근 가능하도록 설정
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:" + absolutePath);
+    }
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        // Swagger UI 리다이렉트 설정
+        registry.addRedirectViewController("/swagger-ui", "/swagger-ui/index.html");
+        registry.addRedirectViewController("/swagger-ui.html", "/swagger-ui/index.html");
     }
 }

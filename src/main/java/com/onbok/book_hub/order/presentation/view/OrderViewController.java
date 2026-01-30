@@ -9,7 +9,6 @@ import com.onbok.book_hub.common.aspect.LogExecutionTime;
 import com.onbok.book_hub.common.exception.ErrorCode;
 import com.onbok.book_hub.common.exception.ExpectedException;
 import com.onbok.book_hub.delivery.application.DeliveryAddressService;
-import com.onbok.book_hub.delivery.domain.model.DeliveryAddress;
 import com.onbok.book_hub.order.application.OrderCommandService;
 import com.onbok.book_hub.order.application.OrderQueryService;
 import com.onbok.book_hub.order.application.OrderStatisticsService;

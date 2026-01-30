@@ -96,7 +96,7 @@ public class PaymentViewController {
         } catch (Exception e) {
             log.error("결제 승인 또는 주문 생성 중 오류 발생", e);
             redirectAttributes.addFlashAttribute("errorMessage", "결제 처리 중 오류가 발생했습니다: " + e.getMessage());
-            return "redirect:/payment/failure";
+            return "redirect:/view/payments/failure";
         }
     }
 

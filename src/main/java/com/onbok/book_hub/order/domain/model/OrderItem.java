@@ -26,7 +26,7 @@ public class OrderItem {
     private int subPrice;
 
     @Builder
-    public  OrderItem(Order order, Book book, int quantity, int subPrice) {
+    public OrderItem(Order order, Book book, int quantity, int subPrice) {
         this.order = order;
         this.book = book;
         this.quantity = quantity;

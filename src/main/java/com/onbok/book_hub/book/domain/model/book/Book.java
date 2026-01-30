@@ -44,6 +44,14 @@ public class Book extends BaseTime {
         this.stock = stock;
     }
 
+    @Builder(builderMethodName = "testBuilder")
+    public Book(Long id, String title, String author, String company) {
+        this.id = id;
+        this.title = title;
+        this.author = author;
+        this.company = company;
+    }
+
     // 재고 감소 메서드
     public void decreaseStock(int quantity) {
         if (this.stock < quantity) {

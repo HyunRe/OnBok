@@ -9,6 +9,7 @@ import com.onbok.book_hub.common.pagination.PaginationUtil;
 import com.onbok.book_hub.common.exception.ErrorCode;
 import com.onbok.book_hub.common.exception.ExpectedException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.domain.*;
 import org.springframework.data.elasticsearch.client.elc.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
@@ -21,6 +22,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "spring.data.elasticsearch.repositories.enabled", havingValue = "true", matchIfMissing = true)
 public class BookEsService {
     public static final int PAGE_SIZE = 10;
     private final BookEsRepository bookEsRepository;
@@ -32,8 +34,8 @@ public class BookEsService {
         return bookEsRepository.findById(bookId).orElseThrow(() -> new ExpectedException(ErrorCode.BOOK_ES_NOT_FOUND));
     }
 
-    public void insertBookEs(BookEs bookEs) {
-        bookEsRepository.save(bookEs);
+    public BookEs insertBookEs(BookEs bookEs) {
+        return bookEsRepository.save(bookEs);
     }
 
     public void deleteBookEs(String bookId) {

@@ -9,7 +9,6 @@ import com.onbok.book_hub.user.application.UserRegistrationService;
 import com.onbok.book_hub.user.domain.model.User;
 import com.onbok.book_hub.user.dto.UserRegistrationRequestDto;
 import com.onbok.book_hub.user.dto.UserUpdateRequestDto;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

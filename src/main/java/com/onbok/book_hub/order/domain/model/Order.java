@@ -41,7 +41,7 @@ public class Order extends BaseTime {
     @JoinColumn(name = "payment_id", referencedColumnName = "id")
     private TossPayment tossPayment;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
     private DeliveryAddress deliveryAddress;
 
