@@ -28,6 +28,11 @@ spring:
     connection-timeout: 5s
     socket-timeout: 60s
 
+  data:
+    elasticsearch:
+      repositories:
+        enabled: true
+
   # 서버 설정
   server:
     port: 8080
@@ -73,12 +78,17 @@ logging:
 # Swagger 설정
 springdoc:
   api-docs:
-    path: /api-docs
+    path: /v3/api-docs
+    enabled: true
   swagger-ui:
     path: /swagger-ui.html
+    enabled: true
     operations-sorter: method
     tags-sorter: alpha
     display-request-duration: true
+    url: /v3/api-docs
+    config-url: /v3/api-docs/swagger-config
+    disable-swagger-default-url: true
 
 # 애플리케이션 설정
 application:

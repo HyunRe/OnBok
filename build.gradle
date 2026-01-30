@@ -59,15 +59,88 @@ dependencies {
     implementation 'org.apache.commons:commons-csv:1.12.0'
 
     // swagger
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
 
     // test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.projectreactor:reactor-test'
     testImplementation 'org.springframework.security:spring-security-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'com.h2database:h2'
+    runtimeOnly 'com.h2database:h2'
+
+    // testcontainers for elasticsearch
+    testImplementation 'org.testcontainers:testcontainers:1.19.3'
+    testImplementation 'org.testcontainers:elasticsearch:1.19.3'
+    testImplementation 'org.testcontainers:junit-jupiter:1.19.3'
 }
 
-tasks.named('test') {
+// === 테스트 소스셋 분리: Unit / Integration ===
+
+sourceSets {
+	// 단위 테스트 소스셋
+	unitTest {
+		java {
+			srcDir 'src/test-unit/java'
+		}
+		resources {
+			srcDir 'src/test/resources'  // test의 resources 공유
+		}
+		compileClasspath += main.output + test.compileClasspath
+		runtimeClasspath += main.output + test.runtimeClasspath
+	}
+
+	// 통합 테스트 소스셋
+	integrationTest {
+		java {
+			srcDir 'src/test-integration/java'
+		}
+		resources {
+			srcDir 'src/test/resources'  // test의 resources 공유
+		}
+		compileClasspath += main.output + test.compileClasspath
+		runtimeClasspath += main.output + test.runtimeClasspath
+	}
+}
+
+// 단위 테스트 태스크
+tasks.register('unitTest', Test) {
+	description = '단위 테스트 실행 (@DataJpaTest, Mock 기반)'
+	group = 'verification'
+	testClassesDirs = sourceSets.unitTest.output.classesDirs
+	classpath = sourceSets.unitTest.runtimeClasspath
 	useJUnitPlatform()
+
+	testLogging {
+		events "passed", "skipped", "failed"
+		exceptionFormat "full"
+	}
+}
+
+// 통합 테스트 태스크
+tasks.register('integrationTest', Test) {
+	description = '통합 테스트 실행 (@SpringBootTest, 전체 컨텍스트)'
+	group = 'verification'
+	testClassesDirs = sourceSets.integrationTest.output.classesDirs
+	classpath = sourceSets.integrationTest.runtimeClasspath
+	useJUnitPlatform()
+
+	testLogging {
+		events "passed", "skipped", "failed"
+		exceptionFormat "full"
+	}
+
+	// 통합 테스트는 단위 테스트 이후 실행
+	shouldRunAfter unitTest
+}
+
+// 기본 test 태스크는 단위 테스트와 통합 테스트를 순차 실행
+tasks.named('test') {
+	description = '모든 테스트 실행 (단위 + 통합)'
+	dependsOn unitTest, integrationTest
+}
+
+// check 태스크에 통합 테스트 추가
+tasks.named('check') {
+	dependsOn integrationTest
 }

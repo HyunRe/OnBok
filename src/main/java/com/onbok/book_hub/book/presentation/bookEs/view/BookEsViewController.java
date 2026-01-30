@@ -5,9 +5,8 @@ import com.onbok.book_hub.book.domain.model.bookEs.BookEs;
 import com.onbok.book_hub.book.dto.response.BookEsListResponseDto;
 import com.onbok.book_hub.book.infrastructure.CsvFileReaderService;
 import com.onbok.book_hub.common.pagination.PaginationInfo;
-import com.onbok.book_hub.common.annotation.CurrentUser;
-import com.onbok.book_hub.user.domain.model.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @Controller
 @RequestMapping("/view/bookEs")
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "spring.data.elasticsearch.repositories.enabled", havingValue = "true", matchIfMissing = true)
 public class BookEsViewController {
     private final BookEsService bookEsService;
     private final CsvFileReaderService csvFileReaderService;

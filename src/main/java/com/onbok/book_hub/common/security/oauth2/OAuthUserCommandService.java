@@ -2,6 +2,7 @@ package com.onbok.book_hub.common.security.oauth2;
 
 import com.onbok.book_hub.user.domain.model.User;
 import com.onbok.book_hub.user.domain.repository.UserRepository;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PUBLIC)
 public class OAuthUserCommandService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;

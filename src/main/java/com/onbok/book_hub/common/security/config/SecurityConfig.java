@@ -6,22 +6,31 @@ import com.onbok.book_hub.common.security.jwt.JwtTokenUtil;
 import com.onbok.book_hub.common.security.oauth2.MyOAuth2UserService;
 import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import java.util.Optional;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final AuthenticationFailureHandler authenticationFailureHandler;
-    private final MyOAuth2UserService myOAuth2UserService;
     private final JwtTokenUtil jwtTokenUtil;
     private final MyUserDetailsService myUserDetailsService;
+
+    @Autowired(required = false)
+    private MyOAuth2UserService myOAuth2UserService;
+
+    @Autowired(required = false)
+    private ClientRegistrationRepository clientRegistrationRepository;
 
     /**
      * 🔐 Security Filter Chain
@@ -86,16 +95,19 @@ public class SecurityConfig {
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
                         .logoutSuccessUrl("/view/users/login")
-                )
+                );
 
-                // 🌐 OAuth2 Login
-                .oauth2Login(oauth -> oauth
-                        .loginPage("/view/users/login")
-                        .userInfoEndpoint(user -> user.userService(myOAuth2UserService))
-                        .defaultSuccessUrl("/view/users/loginSuccess", true)
-                )
+        // 🌐 OAuth2 Login (OAuth2가 활성화된 경우에만)
+        if (clientRegistrationRepository != null && myOAuth2UserService != null) {
+            http.oauth2Login(oauth -> oauth
+                    .loginPage("/view/users/login")
+                    .userInfoEndpoint(user -> user.userService(myOAuth2UserService))
+                    .defaultSuccessUrl("/view/users/loginSuccess", true)
+            );
+        }
 
-                // 🔥 JWT Filter 등록 (이게 핵심)
+        // 🔥 JWT Filter 등록 (이게 핵심)
+        http
                 .addFilterBefore(
                         jwtRequestFilter(),
                         UsernamePasswordAuthenticationFilter.class

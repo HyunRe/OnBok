@@ -32,7 +32,7 @@ public class OrderCommandService {
     private final DeliveryAddressService deliveryAddressService;
     private final OrderQueryService orderQueryService;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Order createOrder(Long userId, List<Cart> cartList, TossPayment tossPayment, Long deliveryAddressId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ExpectedException(ErrorCode.USER_NOT_FOUND));

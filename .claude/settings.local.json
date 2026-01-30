@@ -2,7 +2,25 @@
   "permissions": {
     "allow": [
       "Bash(curl:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(__NEW_LINE__ echo '=== 단위 테스트 (src/test-unit) ===' find src/test-unit/java -name *.java)",
+      "Bash(wc -l echo echo '=== 통합 테스트 (src/test-integration) ===' find src/test-integration/java -name *.java)",
+      "Bash(wc -l echo echo '=== 남은 기존 테스트 (src/test) ===' find src/test/java -name *.java)",
+      "Bash(__NEW_LINE__ echo '=== 단위 테스트 (src/test-unit) ===' ls -la src/test-unit/java/com/onbok/book_hub/)",
+      "Bash(wc -l echo echo '=== 통합 테스트 (src/test-integration) ===' ls -la src/test-integration/java/com/onbok/book_hub/)",
+      "Bash(./gradlew unitTest:*)",
+      "Bash(__NEW_LINE__ mv src/test-unit/java/com/onbok/book_hub/ImageS3ServiceTest.java src/test-integration/java/com/onbok/book_hub/)",
+      "Bash(./gradlew integrationTest:*)",
+      "Bash(./gradlew clean test:*)",
+      "Bash(__NEW_LINE__ echo '=== 최종 테스트 디렉토리 구조 ===' tree -L 4 -I \"build|out|.gradle|.idea\" src/test*)",
+      "Bash(__NEW_LINE__ echo \"=== src/test ===\" ls -la src/test/ echo \"\" echo \"=== src/test/resources ===\" ls -la src/test/resources/ echo \"\" echo \"=== src/test-unit/java/com/onbok/book_hub ===\" ls src/test-unit/java/com/onbok/book_hub/)",
+      "Bash(__NEW_LINE__ echo \"=== 단위 테스트 구조 ===\" find src/test-unit/java -type f -name \"*.java\")",
+      "Bash(sort echo \"\" echo \"=== 통합 테스트 구조 ===\" find src/test-integration/java -type f -name \"*.java\")",
+      "Bash(__NEW_LINE__ echo \"=== 단위 테스트 구조 ===\")",
+      "Bash(tree:*)",
+      "Bash(__NEW_LINE__ echo \"=========================================\" echo \"     최종 테스트 디렉토리 구조\" echo \"=========================================\" echo \"\" echo \"📦 src/test/ (공통 설정)\" ls -la src/test/)"
     ],
     "deny": [],
     "ask": []

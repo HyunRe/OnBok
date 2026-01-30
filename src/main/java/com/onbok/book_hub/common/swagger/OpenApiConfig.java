@@ -24,10 +24,10 @@ public class OpenApiConfig {
 
     /** 스캔 범위/경로 제어 (필요 시 패키지 변경) */
     @Bean
-    public GroupedOpenApi totyPublicApi() {
+    public GroupedOpenApi onBokPublicApi() {
         return GroupedOpenApi.builder()
-                .group("toty-public")
-                .packagesToScan("com.toty")   // RestController 들이 있는 루트 패키지
+                .group("onbok-public")
+                .packagesToScan("com.onbok.book_hub")   // RestController 들이 있는 루트 패키지
                 .pathsToMatch("/**")          // 노출할 API 경로 패턴
                 .build();
     }

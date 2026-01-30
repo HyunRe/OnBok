@@ -52,4 +52,9 @@ public class DeliveryAddress {
         this.tel = tel;
         this.memo = memo;
     }
+
+    // 전화번호 정보 업데이트
+    public void updateTel(String tel) {
+        this.tel = tel;
+    }
 }

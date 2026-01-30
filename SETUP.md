@@ -6,7 +6,12 @@
 - [ElasticSearch 설정](#elasticsearch-설정)
 - [애플리케이션 설정](#애플리케이션-설정)
 - [Toss Payments 설정](#toss-payments-설정)
+- [OAuth2 소셜 로그인 설정](#oauth2-소셜-로그인-설정)
 - [실행 방법](#실행-방법)
+- [접속 URL](#접속-url)
+- [테스트](#테스트)
+- [초기 데이터 설정](#초기-데이터-설정)
+- [문제 해결](#문제-해결)
 
 ---
 
@@ -307,7 +312,22 @@ java -jar build/libs/book-hub-0.0.1-SNAPSHOT.jar
 
 ---
 
-## 🧪 테스트 데이터 초기화
+## 🧪 테스트
+
+### 테스트 코드 실행
+```bash
+# 전체 테스트 실행
+./gradlew test
+
+# 테스트 리포트 확인
+open build/reports/tests/test/index.html
+```
+
+**자세한 테스트 가이드는 [TESTING.md](TESTING.md)를 참고하세요.**
+
+---
+
+## 📦 초기 데이터 설정
 
 ### 1. CSV 파일로 도서 데이터 가져오기
 ```

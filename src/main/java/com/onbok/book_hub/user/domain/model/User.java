@@ -46,6 +46,12 @@ public class User extends BaseTime {
         this.profileUrl = profileUrl;
     }
 
+    @Builder(builderMethodName = "testBuilder")
+    public User(Long id, String email) {
+        this.id = id;
+        this.email = email;
+    }
+
     // 비밀번호 변경 (암호화된 비밀번호를 인자로 받음)
     public void updatePassword(String encodedPassword) {
         if (encodedPassword == null || encodedPassword.isBlank()) {
