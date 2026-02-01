@@ -1,13 +1,15 @@
-package com.onbok.book_hub.payment;
+package com.onbok.book_hub.domain;
 
 import com.onbok.book_hub.payment.domain.model.TossPayment;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 @DisplayName("TossPayment 도메인 단위 테스트")
 class TossPaymentTest {
 

@@ -1,12 +1,14 @@
-package com.onbok.book_hub.book;
+package com.onbok.book_hub.domain;
 
 import com.onbok.book_hub.book.domain.model.book.Book;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+@ActiveProfiles("test")
 @DisplayName("Book 재고 관리 단위 테스트")
 class BookStockTest {
 

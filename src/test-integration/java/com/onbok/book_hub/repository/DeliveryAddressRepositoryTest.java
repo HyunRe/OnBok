@@ -1,4 +1,4 @@
-package com.onbok.book_hub.delivery;
+package com.onbok.book_hub.repository;
 
 import com.onbok.book_hub.delivery.domain.model.DeliveryAddress;
 import com.onbok.book_hub.delivery.domain.repository.DeliveryAddressRepository;
@@ -7,8 +7,11 @@ import com.onbok.book_hub.user.domain.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +19,9 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
+@ActiveProfiles("test")
+@EntityScan(basePackages = "com.onbok.book_hub")
+@EnableJpaRepositories(basePackages = "com.onbok.book_hub")
 @DisplayName("DeliveryAddress Repository 계층 테스트 - @DataJpaTest")
 class DeliveryAddressRepositoryTest {
 

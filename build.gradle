@@ -1,5 +1,6 @@
 plugins {
 	id 'java'
+	id 'idea'
 	id 'org.springframework.boot' version '3.5.9'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -125,6 +126,8 @@ tasks.register('integrationTest', Test) {
 	classpath = sourceSets.integrationTest.runtimeClasspath
 	useJUnitPlatform()
 
+    systemProperty "spring.profiles.active", "test"
+
 	testLogging {
 		events "passed", "skipped", "failed"
 		exceptionFormat "full"
@@ -143,4 +146,14 @@ tasks.named('test') {
 // check 태스크에 통합 테스트 추가
 tasks.named('check') {
 	dependsOn integrationTest
+}
+
+// IntelliJ IDEA가 커스텀 소스셋을 올바르게 인식하도록 설정
+idea {
+	module {
+		testSources.from(sourceSets.unitTest.java.srcDirs)
+		testSources.from(sourceSets.integrationTest.java.srcDirs)
+		testResources.from(sourceSets.unitTest.resources.srcDirs)
+		testResources.from(sourceSets.integrationTest.resources.srcDirs)
+	}
 }

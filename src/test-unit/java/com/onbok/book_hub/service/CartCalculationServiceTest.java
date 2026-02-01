@@ -1,4 +1,4 @@
-package com.onbok.book_hub.cart;
+package com.onbok.book_hub.service;
 
 import com.onbok.book_hub.book.domain.model.book.Book;
 import com.onbok.book_hub.cart.application.CartCalculationService;
@@ -7,12 +7,14 @@ import com.onbok.book_hub.user.domain.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 @DisplayName("CartCalculationService 단위 테스트 - 총 금액 계산")
 class CartCalculationServiceTest {
 

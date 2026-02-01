@@ -1,13 +1,15 @@
-package com.onbok.book_hub.cart;
+package com.onbok.book_hub.domain;
 
 import com.onbok.book_hub.book.domain.model.book.Book;
 import com.onbok.book_hub.cart.domain.model.Cart;
 import com.onbok.book_hub.user.domain.model.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 @DisplayName("Cart 도메인 단위 테스트")
 class CartTest {
 

@@ -1,4 +1,4 @@
-package com.onbok.book_hub.image;
+package com.onbok.book_hub.infrastructure;
 
 import com.onbok.book_hub.image.application.ImageService;
 import com.onbok.book_hub.image.domain.model.Image;
@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 

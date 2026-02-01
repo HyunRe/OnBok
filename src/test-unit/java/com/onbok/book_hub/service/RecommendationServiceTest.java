@@ -1,4 +1,4 @@
-package com.onbok.book_hub.recommendation;
+package com.onbok.book_hub.service;
 
 import com.onbok.book_hub.book.domain.model.book.Book;
 import com.onbok.book_hub.book.domain.repository.book.BookRepository;
@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 @DisplayName("Recommendation 단위 테스트 - 추천 규칙 검증")
 class RecommendationServiceTest {
 

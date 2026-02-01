@@ -1,4 +1,4 @@
-package com.onbok.book_hub.order;
+package com.onbok.book_hub.infrastructure;
 
 import com.onbok.book_hub.book.domain.model.book.Book;
 import com.onbok.book_hub.book.domain.repository.book.BookRepository;
@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;

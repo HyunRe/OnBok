@@ -1,4 +1,4 @@
-package com.onbok.book_hub.review;
+package com.onbok.book_hub.infrastructure;
 
 import com.onbok.book_hub.book.domain.model.book.Book;
 import com.onbok.book_hub.book.domain.repository.book.BookRepository;
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;

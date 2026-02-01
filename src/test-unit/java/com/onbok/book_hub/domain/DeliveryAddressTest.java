@@ -1,12 +1,14 @@
-package com.onbok.book_hub.delivery;
+package com.onbok.book_hub.domain;
 
 import com.onbok.book_hub.delivery.domain.model.DeliveryAddress;
 import com.onbok.book_hub.user.domain.model.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@ActiveProfiles("test")
 @DisplayName("DeliveryAddress 도메인 단위 테스트")
 class DeliveryAddressTest {
 

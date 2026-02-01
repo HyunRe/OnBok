@@ -1,4 +1,4 @@
-package com.onbok.book_hub.oauth2;
+package com.onbok.book_hub.service;
 
 import com.onbok.book_hub.common.security.oauth2.OAuthUserCommandService;
 import com.onbok.book_hub.common.security.oauth2.OAuthUserInfo;
@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.*;
 
 @DisplayName("OAuth2 통합 테스트 - 소셜 로그인")
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 class OAuth2UserServiceTest {
     @Mock
     UserRepository userRepository;

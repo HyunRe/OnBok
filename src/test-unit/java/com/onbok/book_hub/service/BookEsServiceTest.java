@@ -1,4 +1,4 @@
-package com.onbok.book_hub.elasticsearch;
+package com.onbok.book_hub.service;
 
 
 import com.onbok.book_hub.book.application.service.bookEs.BookEsService;
@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
 
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 @DisplayName("BookEsService 단위 테스트")
 class BookEsServiceTest {
 

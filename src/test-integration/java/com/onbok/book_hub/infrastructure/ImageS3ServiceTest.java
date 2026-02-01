@@ -1,4 +1,4 @@
-package com.onbok.book_hub.image;
+package com.onbok.book_hub.infrastructure;
 
 import com.onbok.book_hub.image.application.ImageService;
 import com.onbok.book_hub.image.domain.model.Image;
@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Transactional
-@DisplayName("Image S3 업로드 단위 테스트")
+@DisplayName("Image S3 업로드 통합 테스트")
 class ImageS3ServiceTest {
 
     @Autowired

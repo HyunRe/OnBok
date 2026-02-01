@@ -20,7 +20,9 @@
       "Bash(sort echo \"\" echo \"=== 통합 테스트 구조 ===\" find src/test-integration/java -type f -name \"*.java\")",
       "Bash(__NEW_LINE__ echo \"=== 단위 테스트 구조 ===\")",
       "Bash(tree:*)",
-      "Bash(__NEW_LINE__ echo \"=========================================\" echo \"     최종 테스트 디렉토리 구조\" echo \"=========================================\" echo \"\" echo \"📦 src/test/ (공통 설정)\" ls -la src/test/)"
+      "Bash(__NEW_LINE__ echo \"=========================================\" echo \"     최종 테스트 디렉토리 구조\" echo \"=========================================\" echo \"\" echo \"📦 src/test/ (공통 설정)\" ls -la src/test/)",
+      "Bash(./gradlew clean integrationTest:*)",
+      "Bash(./gradlew:*)"
     ],
     "deny": [],
     "ask": []

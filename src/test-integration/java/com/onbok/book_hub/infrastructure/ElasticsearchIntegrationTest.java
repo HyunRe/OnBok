@@ -1,4 +1,4 @@
-package com.onbok.book_hub.elasticsearch;
+package com.onbok.book_hub.infrastructure;
 
 import com.onbok.book_hub.book.application.service.bookEs.BookEsService;
 import com.onbok.book_hub.book.domain.model.bookEs.BookEs;
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.DockerClientFactory;

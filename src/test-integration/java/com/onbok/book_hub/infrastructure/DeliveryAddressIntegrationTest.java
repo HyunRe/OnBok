@@ -1,4 +1,4 @@
-package com.onbok.book_hub.delivery;
+package com.onbok.book_hub.infrastructure;
 
 import com.onbok.book_hub.common.exception.ExpectedException;
 import com.onbok.book_hub.delivery.application.DeliveryAddressService;
@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
