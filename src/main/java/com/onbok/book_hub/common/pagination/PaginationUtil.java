@@ -13,16 +13,6 @@ public class PaginationUtil {
     public static final int DEFAULT_PAGE_SIZE = 10; // 하단에 표시할 페이지 번호 개수
 
     /**
-     * 페이지 번호와 페이지 크기로 Pageable 객체 생성
-     * @param page 현재 페이지 (1부터 시작)
-     * @param size 페이지당 항목 수
-     * @return Pageable 객체
-     */
-    public static Pageable createPageable(int page, int size) {
-        return PageRequest.of(page - 1, size);
-    }
-
-    /**
      * 기본 페이지 크기로 Pageable 객체 생성
      * @param page 현재 페이지 (1부터 시작)
      * @return Pageable 객체

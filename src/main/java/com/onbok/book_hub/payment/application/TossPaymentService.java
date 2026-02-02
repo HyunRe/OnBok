@@ -138,7 +138,7 @@ public class TossPaymentService {
     }
 
     // 결제 취소 API
-    public String cancelPayment(PaymentCancelRequestDto request) {
+    public void cancelPayment(PaymentCancelRequestDto request) {
         String cancelUrl = API_BASE_URL + "/v1/payments/" + request.getPaymentKey() + "/cancel";
 
         HttpHeaders headers = new HttpHeaders();
@@ -152,7 +152,6 @@ public class TossPaymentService {
 
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(cancelUrl, entity, String.class);
-            return response.getBody();
         } catch (HttpClientErrorException e) {
             System.err.println("HTTP 오류 발생: " + e.getStatusCode());
             System.err.println("응답 본문: " + e.getResponseBodyAsString());
@@ -164,7 +163,7 @@ public class TossPaymentService {
     }
 
     // 부분 환불 또는 전액 환불 API
-    public String refundPayment(PaymentRefundRequestDto request) {
+    public void refundPayment(PaymentRefundRequestDto request) {
         String cancelUrl = API_BASE_URL + "/v1/payments/" + request.getPaymentKey() + "/cancel";
 
         HttpHeaders headers = new HttpHeaders();
@@ -181,7 +180,6 @@ public class TossPaymentService {
 
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(cancelUrl, entity, String.class);
-            return response.getBody();
         } catch (HttpClientErrorException e) {
             System.err.println("HTTP 오류 발생: " + e.getStatusCode());
             System.err.println("응답 본문: " + e.getResponseBodyAsString());

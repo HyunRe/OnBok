@@ -8,7 +8,6 @@ import com.onbok.book_hub.delivery.application.DeliveryAddressService;
 import com.onbok.book_hub.delivery.domain.model.DeliveryAddress;
 import com.onbok.book_hub.order.domain.model.Order;
 import com.onbok.book_hub.order.domain.model.OrderItem;
-import com.onbok.book_hub.order.domain.model.OrderStatus;
 import com.onbok.book_hub.order.domain.repository.OrderRepository;
 import com.onbok.book_hub.payment.domain.model.TossPayment;
 import com.onbok.book_hub.user.domain.model.User;
@@ -64,13 +63,6 @@ public class OrderCommandService {
                 .build();
 
         return orderRepository.save(order);
-    }
-
-    @Transactional
-    public void changeOrderStatus(Long id, OrderStatus newStatus) {
-        Order order = orderQueryService.findById(id);
-        order.changeStatus(newStatus);
-        orderRepository.save(order);
     }
 
     @Transactional

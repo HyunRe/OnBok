@@ -16,6 +16,8 @@ import com.onbok.book_hub.order.domain.model.Order;
 import com.onbok.book_hub.order.dto.OrderCreateRequestDto;
 import com.onbok.book_hub.payment.application.TossPaymentService;
 import com.onbok.book_hub.payment.domain.model.TossPayment;
+import com.onbok.book_hub.payment.dto.PaymentCancelRequestDto;
+import com.onbok.book_hub.payment.dto.PaymentRefundRequestDto;
 import com.onbok.book_hub.user.domain.model.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -85,6 +87,14 @@ public class OrderViewController {
                 throw new ExpectedException(ErrorCode.UNAUTHORIZED_ACCESS);
             }
 
+            // Toss 결제 취소 API 호출
+            String paymentKey = order.getTossPayment().getPaymentKey();
+            PaymentCancelRequestDto cancelRequest = PaymentCancelRequestDto.builder()
+                    .paymentKey(paymentKey)
+                    .cancelReason("고객 주문 취소")
+                    .build();
+            tossPaymentService.cancelPayment(cancelRequest);
+
             orderCommandService.cancelOrder(id);
             redirectAttributes.addFlashAttribute("msg", "주문이 취소되었습니다.");
         } catch (IllegalStateException e) {
@@ -104,6 +114,14 @@ public class OrderViewController {
             if (!order.getUser().getId().equals(user.getId())) {
                 throw new ExpectedException(ErrorCode.UNAUTHORIZED_ACCESS);
             }
+
+            // Toss 환불 API 호출 (전액 환불)
+            String paymentKey = order.getTossPayment().getPaymentKey();
+            PaymentRefundRequestDto refundRequest = PaymentRefundRequestDto.builder()
+                    .paymentKey(paymentKey)
+                    .cancelReason("고객 환불 요청")
+                    .build();
+            tossPaymentService.refundPayment(refundRequest);
 
             orderCommandService.refundOrder(id);
             redirectAttributes.addFlashAttribute("msg", "환불이 완료되었습니다.");

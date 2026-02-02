@@ -1,10 +1,8 @@
 package com.onbok.book_hub.book.application.service.book;
 
 import com.onbok.book_hub.book.domain.model.book.Book;
-import com.onbok.book_hub.book.domain.repository.book.BookRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 도서 재고 관리 전용 Service

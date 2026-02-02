@@ -2,7 +2,6 @@ package com.onbok.book_hub.image.domain.repository;
 
 import com.onbok.book_hub.image.domain.model.Image;
 import com.onbok.book_hub.image.domain.model.ImageStorageType;
-import com.onbok.book_hub.order.domain.model.OrderStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

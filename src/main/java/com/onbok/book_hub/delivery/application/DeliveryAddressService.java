@@ -110,14 +110,6 @@ public class DeliveryAddressService {
     }
 
     /**
-     * 특정 사용자의 모든 배송지 조회 (엔티티)
-     */
-    @Transactional(readOnly = true)
-    public List<DeliveryAddress> findByUser(User user) {
-        return deliveryAddressRepository.findByUser(user);
-    }
-
-    /**
      * 특정 사용자의 배송지 개수 조회
      */
     @Transactional(readOnly = true)

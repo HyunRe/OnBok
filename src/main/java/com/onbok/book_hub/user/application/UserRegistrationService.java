@@ -6,13 +6,10 @@ import com.onbok.book_hub.user.domain.model.LoginProvider;
 import com.onbok.book_hub.user.domain.model.User;
 import com.onbok.book_hub.user.domain.repository.UserRepository;
 import com.onbok.book_hub.user.dto.UserRegistrationRequestDto;
-import com.onbok.book_hub.user.dto.UserUpdateRequestDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDate;
 
 /**
  * 사용자 등록 관련 비즈니스 로직 (검증 + 생성)

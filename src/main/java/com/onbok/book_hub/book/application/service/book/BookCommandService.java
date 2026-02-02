@@ -16,12 +16,4 @@ public class BookCommandService {
     public void insertBook(Book book) {
         bookRepository.save(book);
     }
-
-    public void updateBook(Book book) {
-        bookRepository.save(book);
-    }
-
-    public void deleteBook(Long id) {
-        bookRepository.deleteById(id);
-    }
 }

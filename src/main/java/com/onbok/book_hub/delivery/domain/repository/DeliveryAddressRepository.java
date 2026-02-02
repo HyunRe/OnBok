@@ -23,7 +23,4 @@ public interface DeliveryAddressRepository extends JpaRepository<DeliveryAddress
 
     // 사용자와 별칭으로 배송지 조회
     Optional<DeliveryAddress> findByUserIdAndAlias(Long userId, String alias);
-
-    // 기본 배송지 조회
-
 }

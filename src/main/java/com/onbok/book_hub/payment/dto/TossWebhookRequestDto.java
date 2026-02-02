@@ -1,6 +1,5 @@
 package com.onbok.book_hub.payment.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

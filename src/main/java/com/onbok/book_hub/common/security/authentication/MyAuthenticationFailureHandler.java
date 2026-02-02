@@ -30,18 +30,10 @@ public class MyAuthenticationFailureHandler implements AuthenticationFailureHand
             url = "/view/users/register";
         }
 
-        /*
-        request.setAttribute("msg", msg);
-        request.setAttribute("url", url);
-
-        // 특정 페이지로 이동
-        request.getRequestDispatcher("/common/alertMsg.html").forward(request, response);
-         */
-
         // 실패 메세지 전달
         request.getSession().setAttribute("error", msg);
 
         // 리다이렉션
-        response.sendRedirect("/view/users/login");
+        response.sendRedirect(url);
     }
 }

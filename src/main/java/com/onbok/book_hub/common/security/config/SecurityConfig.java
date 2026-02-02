@@ -4,7 +4,6 @@ import com.onbok.book_hub.common.security.authentication.MyUserDetailsService;
 import com.onbok.book_hub.common.security.jwt.JwtRequestFilter;
 import com.onbok.book_hub.common.security.jwt.JwtTokenUtil;
 import com.onbok.book_hub.common.security.oauth2.MyOAuth2UserService;
-import jakarta.servlet.Filter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -16,8 +15,6 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import java.util.Optional;
 
 @Configuration
 @RequiredArgsConstructor
