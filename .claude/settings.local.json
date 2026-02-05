@@ -22,7 +22,10 @@
       "Bash(tree:*)",
       "Bash(__NEW_LINE__ echo \"=========================================\" echo \"     최종 테스트 디렉토리 구조\" echo \"=========================================\" echo \"\" echo \"📦 src/test/ (공통 설정)\" ls -la src/test/)",
       "Bash(./gradlew clean integrationTest:*)",
-      "Bash(./gradlew:*)"
+      "Bash(./gradlew:*)",
+      "Bash(xargs cat:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

@@ -98,6 +98,7 @@ sourceSets {
 		}
 		resources {
 			srcDir 'src/test/resources'  // test의 resources 공유
+			srcDir 'src/test-integration/resources'
 		}
 		compileClasspath += main.output + test.compileClasspath
 		runtimeClasspath += main.output + test.runtimeClasspath

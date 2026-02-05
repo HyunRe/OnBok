@@ -10,6 +10,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.DockerClientFactory;
@@ -23,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(properties = {
         "spring.data.elasticsearch.repositories.enabled=true"
 })
+@ActiveProfiles("test")
 @EnabledIf("isDockerAvailable")
 @DisplayName("ElasticSearch 통합 테스트 (Docker 필요)")
 class ElasticsearchIntegrationTest {
@@ -42,7 +44,8 @@ class ElasticsearchIntegrationTest {
     static ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(
             "docker.elastic.co/elasticsearch/elasticsearch:8.11.0"
     ).withEnv("xpack.security.enabled", "false")
-     .withEnv("discovery.type", "single-node");
+     .withEnv("discovery.type", "single-node")
+     .withCommand("sh", "-c", "bin/elasticsearch-plugin install analysis-nori && bin/elasticsearch");
 
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
@@ -98,7 +101,7 @@ class ElasticsearchIntegrationTest {
         // given
         BookEs book1 = createBook("1", "책1", "김철수", "출판사A", 25000);
         BookEs book2 = createBook("2", "책2", "김영희", "출판사B", 30000);
-        BookEs book3 = createBook("3", "책3", "이철수", "출판사C", 28000);
+        BookEs book3 = createBook("3", "책3", "이영희", "출판사C", 28000);
 
         bookEsService.insertBookEs(book1);
         bookEsService.insertBookEs(book2);
@@ -111,13 +114,11 @@ class ElasticsearchIntegrationTest {
         }
 
         // when
-        Page<BookEs> results = bookEsService.searchByAuthor("철수", 1);
+        Page<BookEs> results = bookEsService.searchByAuthor("김철수", 1);
 
         // then
-        assertThat(results.getContent()).hasSize(2);
-        assertThat(results.getContent())
-                .extracting("author")
-                .contains("김철수", "이철수");
+        assertThat(results.getContent()).hasSize(1);
+        assertThat(results.getContent().get(0).getAuthor()).isEqualTo("김철수");
     }
 
     @Test

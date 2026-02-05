@@ -37,17 +37,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderViewController 주문 취소/환불 단위 테스트")
 class OrderViewControllerCancelRefundTest {
-
-    @Mock
-    private CartService cartService;
-    @Mock
-    private DeliveryAddressService deliveryAddressService;
     @Mock
     private OrderCommandService orderCommandService;
     @Mock
     private OrderQueryService orderQueryService;
-    @Mock
-    private OrderStatisticsService orderStatisticsService;
     @Mock
     private TossPaymentService tossPaymentService;
 
