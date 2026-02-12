@@ -23,7 +23,7 @@ ElasticSearch 기반 검색과 협업 필터링 추천 알고리즘을 적용한
 | Framework | Spring Boot 3.x |
 | Security | Spring Security, JWT (jjwt), OAuth2 (Google, Naver, GitHub) |
 | ORM | Spring Data JPA |
-| Database | MariaDB / MySQL 8 |
+| Database | MariaDB |
 | Search | ElasticSearch 8.x (Nori 형태소 분석기) |
 | Payment | Toss Payments API |
 | Template | Thymeleaf, Bootstrap 5 |
