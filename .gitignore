@@ -39,6 +39,9 @@ out/
 ### Claude Code ###
 .claude/
 
+### Code Review (개인용) ###
+CODE_REVIEW.md
+
 ### Application Secret ###
 **/application-secret.yaml
 **/application-secret.yml

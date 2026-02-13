@@ -119,6 +119,11 @@ tasks.register('unitTest', Test) {
 	}
 }
 
+// 통합 테스트 리소스 중복 허용 (test/resources와 test-integration/resources 공유)
+tasks.named('processIntegrationTestResources') {
+	duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}
+
 // 통합 테스트 태스크
 tasks.register('integrationTest', Test) {
 	description = '통합 테스트 실행 (@SpringBootTest, 전체 컨텍스트)'
