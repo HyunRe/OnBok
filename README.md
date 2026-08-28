@@ -82,8 +82,14 @@
     - 계층 분리: application / domain / presentation / dto
 - **계층별 역할 분리**
     - Controller → 요청/응답만 담당
+    - Facade → 여러 도메인에 걸친 흐름 조합 + 트랜잭션 경계 관리
     - Service → 비즈니스 로직 집중 (CQS 패턴: Command/Query 분리)
     - Entity → 도메인 로직 캡슐화 (상태 전이, 유효성 검증)
+- **Facade 패턴 (결제·주문 흐름)**
+    - `PaymentOrderFacade` → 결제 승인 ~ 주문 생성 (payment/order/cart 조합)
+    - `OrderCancellationFacade` → 주문 취소/환불 (권한 검증 + Toss 취소 + 상태 반영)
+    - 외부 API 호출은 트랜잭션 밖, DB 쓰기만 트랜잭션 안에 두어 커넥션 점유 방지
+    - 결제는 승인됐는데 주문 생성이 실패하면 보상 트랜잭션으로 결제 취소
 - **동시성 제어**
     - `@Version` 낙관적 락을 활용한 재고 동시성 제어
     - 트랜잭션 원자성 보장 (주문 취소/환불 시 재고 복구)
@@ -304,8 +310,10 @@ public void handleWebhook(TossWebhookRequestDto dto) {
 ### 결제 흐름
 
 1. 클라이언트 → Toss 결제창 → 결제 완료
-2. Toss → 서버 Webhook 호출 → 주문 상태 변경
-3. 취소/환불 시 재고 자동 복구
+2. `PaymentOrderFacade`가 승인 → 결제 저장 · 주문 생성 · 장바구니 비우기(단일 트랜잭션)
+3. 주문 생성 실패 시 보상 트랜잭션으로 Toss 결제 자동 취소
+4. Toss → 서버 Webhook 호출 → 주문 상태 동기화
+5. 취소/환불 시 재고 자동 복구
 
 ---
 
@@ -313,7 +321,7 @@ public void handleWebhook(TossWebhookRequestDto dto) {
 
 ### 적용 방식
 
-- **ErrorCode Enum**: 18개 에러 코드 정의
+- **ErrorCode Enum**: 24개 에러 코드 정의
 - **ExpectedException**: 비즈니스 예외 래핑
 - **GlobalExceptionHandler**: 중앙 집중 예외 처리
 
@@ -365,19 +373,22 @@ public class GlobalExceptionHandler {
 - `@Transactional(readOnly = true)` 조회 분리
 - 쓰기 작업 최소 범위 지정
 - 불필요한 락 방지
+- **외부 API를 트랜잭션에서 제외**: Facade에서 `TransactionTemplate`으로 경계를 직접 지정해,
+  Toss API 응답을 기다리는 동안 DB 커넥션을 점유하지 않도록 분리
+  (DB 롤백은 이미 승인된 결제를 되돌리지 못하므로 보상 트랜잭션으로 처리)
 
 ---
 
 # 4. 테스트 전략
 
 ```
-src/test-unit/          # 단위 테스트 (9개)
+src/test-unit/          # 단위 테스트 (10개)
 src/test-integration/   # 통합 테스트 (13개)
 ```
 
 Gradle Custom SourceSet으로 분리 관리
 
-## 4-1. 단위 테스트 (9개)
+## 4-1. 단위 테스트 (10개)
 
 | 파일 | 대상 |
 |------|------|
@@ -389,7 +400,8 @@ Gradle Custom SourceSet으로 분리 관리
 | RecommendationServiceTest | 추천 알고리즘 5가지 검증 |
 | BookEsServiceTest | Elasticsearch 검색 |
 | OAuth2UserServiceTest | OAuth2 인증 로직 |
-| OrderViewControllerCancelRefundTest | 주문 취소/환불 컨트롤러 |
+| OrderCancellationFacadeTest | 주문 취소/환불 흐름 (권한 검증, 호출 순서, 실패 처리) |
+| OrderViewControllerCancelRefundTest | 주문 취소/환불 컨트롤러 (메시지/리다이렉트) |
 
 ## 4-2. 통합 테스트 (13개)
 
@@ -459,6 +471,28 @@ Gradle Custom SourceSet으로 분리 관리
 - **문제**: IntelliJ에서 통합 테스트 실행 시 로컬 DB 연결 시도
 - **해결**: `@ActiveProfiles("test")` 추가 + 별도 리소스 디렉토리 구성
 
+## 5-5. 결제-주문 정합성 (Facade 도입)
+
+- **문제**: 결제 승인 ~ 주문 생성이 Controller에서 조합되고 트랜잭션이 없어,
+  중간에 실패하면 결제만 되고 주문은 없는 상태가 발생
+- **원인**: 오케스트레이션 계층이 없어 그 역할이 Controller로 밀려남
+- **해결**: `PaymentOrderFacade` 도입
+    - 장바구니 검증을 결제 승인 **앞**으로 이동 (승인 후 실패 자체를 줄임)
+    - Toss API 호출은 트랜잭션 밖, DB 쓰기 3건은 `TransactionTemplate`으로 한 트랜잭션
+    - 그래도 실패하면 보상 트랜잭션으로 결제 취소
+
+```java
+// 외부 API는 트랜잭션 밖 - 응답 대기 동안 DB 커넥션을 점유하지 않는다
+TossPayment approvedPayment = tossPaymentService.approveAndBuildPayment(approveRequest);
+
+try {
+    return transactionTemplate.execute(status -> { /* 결제 저장 + 주문 생성 + 장바구니 비우기 */ });
+} catch (RuntimeException e) {
+    compensate(approveRequest.getPaymentKey(), e);  // DB 롤백으로는 결제를 되돌릴 수 없다
+    throw e;
+}
+```
+
 ---
 
 # 6. 배운 점
@@ -482,6 +516,15 @@ Gradle Custom SourceSet으로 분리 관리
 - **검색 시스템은 언어 특성을 고려해야 한다.**
     - 한글은 형태소 분석기 필수
     - Nori 토크나이저로 검색 품질 대폭 향상
+
+- **트랜잭션 경계는 "넓게"가 아니라 "정확하게" 잡아야 한다.**
+    - 외부 API를 트랜잭션에 넣으면 커넥션을 점유할 뿐, 결제는 롤백되지 않는다
+    - 되돌릴 수 있는 실패(주문 생성)는 보상 트랜잭션으로,
+      되돌릴 수 없는 실패(이미 취소된 결제)는 수동 정산 로그로 구분해 처리
+
+- **패턴은 이름이 아니라 책임의 빈자리를 채울 때 의미가 있다.**
+    - Facade를 전 도메인에 깔지 않고, 여러 도메인이 실제로 얽히는 결제·주문 두 곳에만 적용
+    - 서비스가 하나뿐인 얇은 컨트롤러에는 도입하지 않음
 
 ---
 
