@@ -1,5 +1,7 @@
 package com.onbok.book_hub.payment.application;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.onbok.book_hub.common.exception.ErrorCode;
 import com.onbok.book_hub.common.exception.ExpectedException;
 import com.onbok.book_hub.order.application.OrderCommandService;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,6 +34,7 @@ public class TossPaymentService {
     private final RestTemplate restTemplate;
     private final TossPaymentRepository tossPaymentRepository;
     private final OrderCommandService orderCommandService;
+    private final ObjectMapper objectMapper;
 
     @Value("${toss.payment.secret.key}")
     private String SECRET_KEY;
@@ -72,8 +76,47 @@ public class TossPaymentService {
         }
     }
 
+    /**
+     * 결제를 승인하고 Toss 응답을 TossPayment 엔티티로 변환한다. (저장하지는 않는다)
+     * Toss 응답 규격을 아는 책임은 payment 계층에 둔다.
+     */
+    public TossPayment approveAndBuildPayment(PaymentApproveRequestDto request) {
+        return toTossPayment(approvePayment(request));
+    }
+
+    private TossPayment toTossPayment(String jsonResult) {
+        try {
+            Map<String, Object> result = objectMapper.readValue(jsonResult, new TypeReference<Map<String, Object>>() {});
+            String approvedAt = (String) result.get("approvedAt");
+
+            return TossPayment.builder()
+                    .paymentKey((String) result.get("paymentKey"))
+                    .name((String) result.get("orderName"))
+                    .status((String) result.get("status"))
+                    // 가상계좌 등 승인 시각이 없는 결제 수단을 고려해 null을 허용한다
+                    .approvalTime(approvedAt != null ? OffsetDateTime.parse(approvedAt).toLocalDateTime() : null)
+                    .paymentType(result.get("card") != null ? "card" : "other")
+                    .totalPayment((Integer) result.get("totalAmount"))
+                    .version((String) result.get("version"))
+                    .build();
+        } catch (Exception e) {
+            log.error("결제 승인 응답 파싱 실패: {}", jsonResult, e);
+            throw new ExpectedException(ErrorCode.PAYMENT_CONFIRM_ERROR);
+        }
+    }
+
     public TossPayment insertTossPayment(TossPayment tossPayment) {
         return tossPaymentRepository.save(tossPayment);
+    }
+
+    /**
+     * Toss 취소/환불 API 성공 후 결제 엔티티의 상태를 CANCELED로 반영한다.
+     */
+    @Transactional
+    public void markCanceled(Long paymentId) {
+        TossPayment payment = findById(paymentId);
+        payment.cancel();
+        tossPaymentRepository.save(payment);
     }
 
     /**
