@@ -1,563 +1,212 @@
-# ONBOK Backend
+# ONBOK (검색 품질 & 결제 신뢰성 중심 고성능 온라인 서점)
 
-> 도서 검색부터 주문·결제까지 원스톱 구매를 지원하는 서점 플랫폼으로, 검색 정확도를 개선하고 안전한 결제 흐름을 설계하여 실제 서비스 수준의 전자상거래 경험을 구현한 백엔드 시스템
+Elasticsearch 기반의 한글 정밀 검색과 Toss Payments 및 동시성 제어로 결제 정합성을 보장하는 이커머스 백엔드
 
----
+## 1. 프로젝트 개요
 
-# 1. 프로젝트 개요
+### 1-1. 기획 배경
 
-## 1-1. 프로젝트 목표
+* **한글 검색의 한계**: 기존 RDBMS LIKE 검색은 데이터 증가 시 성능이 급격히 저하되며, 조사/어미가 발달한 한글 특성상 형태소 분석 없이 정밀한 검색 결과를 제공하기 어렵습니다.
+* **이커머스 결제/재고 정합성 이슈**: 대규모 동시 주문 시 발생할 수 있는 재고 수량 불일치(Race Condition) 및 클라이언트 네트워크 불안정으로 인한 결제 상태 오차 리스크를 구조적으로 차단하고자 했습니다.
+* **해결 방향**: Elasticsearch + Nori 분석기 기반의 가중치 랭킹 검색 아키텍처, 낙관적 락(@Version)을 활용한 재고 동시성 제어, 그리고 Webhook 기반의 Toss Payments 결제 상태 머신을 도입하여 대용량 처리 환경에서도 안정적인 서점 플랫폼을 구현했습니다.
 
-### 일반 목표
+### 1-2. 프로젝트 목표
 
-- 단순 CRUD 기반 쇼핑몰이 아닌, 실사용 가능한 전자상거래 플랫폼 구현
-- 도서 검색부터 주문·결제까지 원스톱 구매 경험 제공
-- 사용자 친화적이고 안정적인 백엔드 서비스 제공
+* Nori 형태소 분석기 및 Multi-field 가중치 검색으로 검색 결과 최상단 노출 정확도 향상
+* 낙관적 락 적용으로 성능 저하 없이 동시 주문 시 재고 정합성 100% 보장
+* Toss Payments Webhook 및 Enum 상태 머신 설계를 통한 결제 불일치 0건 달성
+* 외부 API 호출을 트랜잭션 밖으로 격리하여 DB 커넥션 점유 최소화 (PaymentOrderFacade 패턴)
+* Elasticsearch Near-Real-Time(NRT) 지연 특성 제어로 통합 테스트 성공 신뢰성 100% 확보
 
-### 핵심 목표
+### 1-3. 기술 스택
 
-- **Elasticsearch + Nori 형태소 분석기** 기반 고도화된 검색 시스템 구축
-- **Toss Payments** 연동을 통한 실제 결제 흐름 구현
-- **도메인 중심 설계**를 통한 주문·결제 상태 일관성 보장
-- **낙관적 락**을 활용한 재고 동시성 제어
+* **Core**: Java 17, Spring Boot 3.x, Spring Data JPA
+* **Security & Auth**: Spring Security, JWT, OAuth2(Google, Naver, GitHub)
+* **Payment & Engine**: Toss Payments API, Elasticsearch (Nori Analyzer)
+* **Database**: MariaDB
+* **Infrastructure**: Docker
+* **Test**: JUnit5, Mockito, AssertJ, Testcontainers
+* **Docs**: Swagger 
 
----
+### 1-4. 시스템 아키텍처 및 CI/CD 파이프라인
 
-## 1-2. 핵심 기능
+**[시스템 아키텍처]**
 
-- Elasticsearch 기반 도서 검색 (Nori 한글 형태소 분석)
-- 자동완성 및 부분 일치 검색
-- 협업 필터링 기반 사용자 맞춤 추천
-- Toss Payments 결제 요청, 승인, 취소, 환불 처리
-- 주문 상태 전이 관리 및 재고 동시성 제어
-- JWT + OAuth2 기반 인증/인가
-- 예외 처리 통합 관리
-
----
-
-## 1-3. 기술 스택
-
-| 분류 | 기술 |
-|------|------|
-| Language | Java 17 |
-| Framework | Spring Boot 3.x |
-| Security | Spring Security, JWT (jjwt), OAuth2 (Google, Naver, GitHub) |
-| ORM | Spring Data JPA |
-| Database | MariaDB |
-| Search | ElasticSearch 8.x (Nori 형태소 분석기) |
-| Payment | Toss Payments API |
-| Infrastructure | Docker, Testcontainers |
-| Test | JUnit5, Mockito, AssertJ, Testcontainers |
-| Docs | Swagger (springdoc-openapi) |
-
----
-
-## 1-4. 시스템 아키텍처
-
-```
-                          ┌──────────┐
-                          │  Client  │
-                          │(Browser) │
-                          └────┬─────┘
-                               │
-                               ▼
-                   ┌───────────────────────┐
-                   │   Spring Boot Server  │
-                   │ (REST API + Security) │
-                   └───────────┬───────────┘
-                               │
-      ┌────────────────────────┼────────────────────────┐
-      │                        │                        │
-      ▼                        ▼                        ▼
-┌───────────┐          ┌─────────────┐          ┌─────────────┐
-│  MariaDB  │          │ElasticSearch│          │    Toss     │
-│   (DB)    │          │  (Search)   │          │  Payments   │
-└───────────┘          └─────────────┘          └─────────────┘
+```text
+  [ Users & Clients ]
+         │ (HTTPS / REST API)
+         ▼
+    [ Spring Boot Backend Server ]
+   ┌────────────────────────────────────────────────────────┐
+   │  - Core API / Auth / Business Logic                    │
+   │  - PaymentOrderFacade (External Transaction Boundary)  │
+   └──────┬──────────────────┬────────────────────┬─────────┘
+          │                  │                    │
+          ▼                  ▼                    ▼
+    [ MariaDB ]       [ Elasticsearch ]    [ Toss Payments API ]
+  (Primary RDBMS)    (Nori Tokenizer)      (Payment Approval)
 ```
 
-### 설계 원칙
+## 2. 도메인 및 구조 설계
 
-- **DDD 기반 패키지 구조**
-    - 도메인별 패키지 분리 (book, cart, order, payment, user, review, recommendation 등)
-    - 계층 분리: application / domain / presentation / dto
-- **계층별 역할 분리**
-    - Controller → 요청/응답만 담당
-    - Facade → 여러 도메인에 걸친 흐름 조합 + 트랜잭션 경계 관리
-    - Service → 비즈니스 로직 집중 (CQS 패턴: Command/Query 분리)
-    - Entity → 도메인 로직 캡슐화 (상태 전이, 유효성 검증)
-- **Facade 패턴 (결제·주문 흐름)**
-    - `PaymentOrderFacade` → 결제 승인 ~ 주문 생성 (payment/order/cart 조합)
-    - `OrderCancellationFacade` → 주문 취소/환불 (권한 검증 + Toss 취소 + 상태 반영)
-    - 외부 API 호출은 트랜잭션 밖, DB 쓰기만 트랜잭션 안에 두어 커넥션 점유 방지
-    - 결제는 승인됐는데 주문 생성이 실패하면 보상 트랜잭션으로 결제 취소
-- **동시성 제어**
-    - `@Version` 낙관적 락을 활용한 재고 동시성 제어
-    - 트랜잭션 원자성 보장 (주문 취소/환불 시 재고 복구)
-- **상태 관리**
-    - Enum 기반 상태 관리 (OrderStatus, ImageStorageType 등)
-    - 상태 전이 규칙 검증 (`canTransitionTo` 메서드)
+### 2-1. 패키지 및 프로젝트 구조
 
----
-
-# 2. 도메인 설계
-
-## 2-1. 핵심 엔티티
-
-```
-Order
-├── OrderItem (주문 상품)
-├── TossPayment (결제 정보)
-├── DeliveryAddress (배송지)
-└── User (주문자)
-
-Book
-├── stock (재고)
-├── version (낙관적 락)
-└── BookEs (Elasticsearch 문서)
+```text
+com.onbok.book_hub
+├── common             # Security, Elasticsearch, TossPayments 설정 및 Global Error
+└── domain
+    ├── user           # 회원 및 OAuth2 로그인
+    ├── book           # 도서 조회 및 Elasticsearch Nori 매핑
+    ├── order          # 주문, 재고 관리 (@Version) 및 상태 머신
+    ├── payment        # PaymentOrderFacade, Toss Payments Webhook 처리
+    ├── cart           # 장바구니 도메인
+    ├── delivery       # 배송 상태 및 정보 관리
+    ├── image          # 도서 이미지 관리
+    ├── recommendation # 협업 필터링 기반 도서 추천
+    └── review         # 도서 리뷰 및 평점 관리
 ```
 
-### 주요 엔티티
+### 2-2. 핵심 상태 관리 (OrderStatus Enum 기반 상태 머신)
 
-| 엔티티 | 역할 |
-|--------|------|
-| Order | 주문 관리 및 상태 전이 |
-| OrderItem | 주문 상품 정보 |
-| Book | 도서 정보 및 재고 관리 |
-| TossPayment | Toss 결제 정보 |
-| User | 사용자 인증 및 프로필 |
-| Review | 도서 리뷰 및 별점 |
-| DeliveryAddress | 배송지 관리 |
-
----
-
-## 2-2. 상태 관리 (Enum 기반)
-
-### OrderStatus 상태 전이
-
-| 상태 | 설명 | 전이 가능 상태 |
-|------|------|----------------|
-| PENDING | 주문 대기 | PAYMENT_COMPLETED, CANCELLED |
-| PAYMENT_COMPLETED | 결제 완료 | PREPARING, CANCELLED |
-| PREPARING | 상품 준비중 | SHIPPED, CANCELLED |
-| SHIPPED | 배송중 | DELIVERED |
-| DELIVERED | 배송 완료 | REFUNDED |
-| CANCELLED | 주문 취소 | (최종 상태) |
-| REFUNDED | 환불 완료 | (최종 상태) |
-
-```
-PENDING → PAYMENT_COMPLETED → PREPARING → SHIPPED → DELIVERED
-            ↓                    ↓                      ↓
-         CANCELLED           CANCELLED              REFUNDED
+```text
+[PENDING] (주문 생성)
+   │
+   ├──► [PAYMENT_COMPLETED] (결제 완료)
+   │          │
+   │          └──► [PREPARING] (상품 준비 중)
+   │                    │
+   │                    └──► [SHIPPED]
+   │                              │
+   │                              └──► [DELIVERED]
+   │
+   └──► [CANCELLED] ◄──────────────┴──► [REFUNDED] (결제 취소 & 재고 자동 복구)
 ```
 
-상태 변경은 반드시 엔티티 내부 메서드를 통해 수행
+## 3. 핵심 기능 및 담당 도메인
 
-```java
-public void changeStatus(OrderStatus newStatus) {
-    if (!this.status.canTransitionTo(newStatus)) {
-        throw new IllegalStateException(
-            String.format("주문 상태를 %s에서 %s로 변경할 수 없습니다.",
-                this.status.getDescription(), newStatus.getDescription())
-        );
-    }
-    this.status = newStatus;
-}
-```
+### 3-1. 핵심 기능 요약
 
-서비스 계층이 아닌 **엔티티 내부에서 상태 전이 규칙 검증**
+* **Elasticsearch 정밀 검색**: Nori 형태소 분석, 필드별 가중치(제목 > 저자 > 요약), 오타 보정 Fuzzy Query
+* **낙관적 락 재고 제어**: @Version 기반 동시성 제어로 동시 주문 시 정합성 유지
+* **외부 결제 연동 & Webhook**: Toss Payments 승인 및 Webhook 연동을 통한 결제 상태 자동 동기화
+* **협업 필터링 추천**: 유저 구매 이력 기반 맞춤형 도서 개인화 추천
 
----
 
-# 3. 내가 담당한 부분
+| **구분**     | **설명**              | **점수 계산 / 처리 방식** |
+| ---------- | ------------------- | ----------------- |
+| **구매 기반**  | 구매 이력의 동일 저자/출판사 도서 | 저자 +3, 출판사 +1     |
+| **리뷰 기반**  | 4점 이상 평가한 도서의 동일 저자 | +5점               |
+| **협업 필터링** | 유사 사용자(공통 구매) 기반 추천 | 유사도 × 가중치         |
+| **인기 도서**  | 전체 주문 수량 기준         | 주문량 순             |
+| **고평점 도서** | 평균 평점 기준 (최소 3개 리뷰) | 평점 순              |
 
-## 3-1. Elasticsearch 검색 시스템 구축
+### 3-2. 핵심 비즈니스 로직
 
-### 문제
+| **구분**        | **비즈니스 규칙 및 지표**                      | **처리 방식**                                                                  |
+| ------------- | ------------------------------------- | -------------------------------------------------------------------------- |
+| **검색 랭킹**     | 키워드 검색 시 단순 본문 매칭보다 제목/저자 매칭 우선 노출    | Multi-field 매핑 기반 가중치 랭킹: 제목(2.0), 저자(1.5), 요약(1.0) 설정                     |
+| **재고 정합성**    | 동시에 동일 도서 주문 시 재고 음수 처리 방지            | 엔티티 내 @Version 낙관적 락 적용 및 충돌 시 예외 재시도 안내                                 |
+| **결제 불일치 방지** | 네트워크 장애로 결제창 종료 후 유저 이탈 시 주문 상태 멈춤 차단 | Toss Webhook 체계로 외부 결제 상태 변화를 수신하여 PAYMENT_COMPLETED / CANCELLED 자동 전환 |
 
-- 기본 SQL LIKE 검색으로는 한글 형태소 분석 불가
-- "스프링 부트"로 검색 시 "스프링부트" 결과 누락
+### 3-3. 담당 영역 및 역할
 
-### 적용 방식
+* **개인 프로젝트 (100% 기여**
 
-- **Nori 형태소 분석기** 적용 (한글 토큰화)
-- **MultiField 매핑**: Text + Keyword 이중 필드 구성
-- **가중치 기반 멀티 필드 검색**: 제목(2.0) > 저자(1.5) > 요약(1.0)
-- **Fuzzy 검색**: 오타 자동 교정 (AUTO fuzziness)
+  * **도메인 설계 및 검색 구축**: Elasticsearch Nori 분석기 튜닝 및 가중치 랭킹 알고리즘 구현
+  * **트랜잭션 및 결제 아키텍처**: PaymentOrderFacade 패턴과 TransactionTemplate으로 외부 API 호출을 트랜잭션 밖으로 분리하고 Webhook 상태 머신 구축
+  * **통합 테스트 환경 자동화**: Testcontainers 환경에 analysis-nori 동적 주입 및 백엔드 전 과정 테스트 자동화
 
-```java
-@Query("""
-{
-  "multi_match": {
-    "query": "?0",
-    "fields": ["title^2", "author^1.5", "summary^1"],
-    "type": "best_fields"
-  }
-}
-""")
-Page<BookEs> searchByMultiField(String keyword, Pageable pageable);
-```
+## 4. 엔지니어링 문제 해결 및 회고
 
-### 개선 효과
+### 4-1. 성능 개선 및 구조 최적화
 
-- 한글 검색 정확도 향상
-- 오타 허용으로 사용자 경험 개선
-- 관련성 기반 정렬로 검색 품질 향상
+| **개선 항목**        | **개선 전**                                      | **개선 후**                            | **정성적 / 정량적 효과**                     |
+| ---------------- | --------------------------------------------- | ----------------------------------- | ------------------------------------ |
+| **한글 검색 정확도**    | RDBMS LIKE 단순 검색 (조사 포함, 오타 미보정)              | Nori 형태소 분석 + Multi-field 가중치 튜닝    | 검색 결과 최상단 노출 정확도 대폭 개선, 오타 보정 유연성 확보 |
+| **동시 주문 재고 정합성** | 별도 락 제어 없음 (Race Condition 발생 시 재고 음수)        | 엔티티 @Version 낙관적 락 적용             | 별도 DB Lock 점유 없이 재고 정합성 100% 보장      |
+| **결제 상태 불일치**    | 유저 브라우저 응답에 의존 ('결제 대기' 멈춤 리스크)               | Toss Webhook + Enum 상태 머신 설계        | 외부 API 연동 불확실성 제거, 결제 불일치 0건 달성      |
+| **통합 테스트 안정성**   | NRT 특성으로 인한 Thread.sleep 임시 대기 (Flaky Test) | Elasticsearch _refresh API 명시적 호출 | 테스트 신뢰성 100% 확보 및 전체 빌드 시간 대폭 단축     |
 
----
+### 4-2. 기술 트러블슈팅
 
-## 3-2. 협업 필터링 추천 알고리즘 구현
+#### 1) PaymentOrderFacade 도입을 통한 외부 API 트랜잭션 분리
 
-### 문제
+* **현상 (Problem)**
 
-- 베스트셀러 기반 추천은 개인화 부족
-- 사용자별 맞춤 추천 필요
+  * Toss Payments 결제 승인 API 연동 중 외부 네트워크 지연이 발생하면, 백엔드 서버의 DB 커넥션 풀(HikariCP)이 고갈되면서 다른 모든 API 요청까지 마비되는 시스템 전체 장애 현상을 확인했습니다.
+* **원인 (Root Cause)**
 
-### 적용 방식
+  * 기존 구조에서는 @Transactional로 묶인 단일 트랜잭션 범위 안에서 외부 결제 승인 API(HTTP 요청)를 직접 호출하고 있었습니다.
+  * 외부 API의 응답을 기다리는 동안 DB 커넥션을 반납하지 못하고 잡고 있게 되어, 네트워크 지연 시간이 그대로 DB 커넥션 점유 시간으로 이어지는 구조적 문제가 원인이었습니다.
+* **해결 (Solution)**
 
-5가지 추천 알고리즘 구현:
+  * PaymentOrderFacade 패턴과 TransactionTemplate을 도입하여 **트랜잭션의 경계를 물리적으로 분리**했습니다.
+  * **[1단계]** DB에 PENDING 상태의 주문 생성 (짧은 DB 트랜잭션) ➔ **[2단계]** external Toss API 호출 (트랜잭션 밖에서 수행하여 DB 커넥션 미점유) ➔ **[3단계]** 결제 결과 DB 반영 (짧은 DB 트랜잭션) 형태로 구조를 바꿨습니다.
+  * 만약 2단계 승인 성공 후 3단계 DB 반영 중 예외가 발생할 경우, DB 롤백만으로는 이미 승인된 결제를 되돌릴 수 없으므로 Toss 결제 취소 API를 호출하는 보상 트랜잭션compensate())을 구현하여 데이터 일관성을 유지했습니다.
+* **결과 (Impact)**
 
-| 알고리즘 | 설명 | 점수 계산 |
-|----------|------|-----------|
-| 구매 기반 | 구매 이력의 동일 저자/출판사 도서 | 저자 +3, 출판사 +1 |
-| 리뷰 기반 | 4점 이상 평가한 도서의 동일 저자 | +5점 |
-| 협업 필터링 | 유사 사용자(공통 구매) 기반 추천 | 유사도 * 가중치 |
-| 인기 도서 | 전체 주문 수량 기준 | 주문량 순 |
-| 고평점 도서 | 평균 평점 기준 (최소 3개 리뷰) | 평점 순 |
+  * 외부 API 요청 지연이 발생하더라도 DB 커넥션을 점유하지 않도록 완벽히 격리하여, 시스템 전체의 처리량(Throughput)과 안정성을 확보했습니다.
 
-```java
-// 협업 필터링: 유사 사용자 찾기
-Map<Long, Integer> similarUsers = new HashMap<>();
-for (Long otherUserId : allUserIds) {
-    Set<Long> commonBooks = getCommonPurchasedBooks(userId, otherUserId);
-    if (!commonBooks.isEmpty()) {
-        similarUsers.put(otherUserId, commonBooks.size());
-    }
-}
-```
+#### 2) Testcontainers 환경 내 Elasticsearch Nori 플러그인 누락 해결
 
-### 개선 효과
+* **현상 (Problem)**
 
-- 개인화된 추천으로 구매 전환율 향상 기대
-- 다양한 추천 로직으로 콜드 스타트 문제 해결
+  * 로컬 및 CI/CD 환경에서 독립적인 테스트를 수행하기 위해 Testcontainers로 Elasticsearch 컨테이너를 구동해 통합 테스트를 실행하면, Unknown tokenizer type [nori_tokenizer] 예외가 발생하며 한글 검색 관련 모든 테스트가 실패했습니다.
+* **원인 (Root Cause)**
 
----
+  * Docker Hub에서 제공하는 공식 Elasticsearch 기본 이미지에는 한국어 형태소 분석기인 analysis-nori 플러그인이 포함되어 있지 않기 때문이었습니다.
+* **해결 (Solution)**
 
-## 3-3. 낙관적 락 기반 재고 동시성 제어
+  * 별도의 커스텀 Docker Image를 매번 만들어 올리는 번거로움을 피하기 위해, Testcontainers 구동 시 **컨테이너 실행 명령(Command)을 동적으로 주입하는 설정 클래스**를 구현했습니다.
+  * withCommand("sh", "-c", "bin/elasticsearch-plugin install analysis-nori && bin/elasticsearch") 명령을 주입하여, 컨테이너 셋업 시점에 Nori 플러그인을 자동으로 다운로드 및 설치한 후 ES 엔진이 켜지도록 환경을 구현했습니다.
+* **결과 (Impact)**
 
-### 문제
+  * 별도의 외부 커스텀 이미지 관리 없이, 표준 Docker 환경만 갖춰져 있다면 CI/CD 및 로컬 어디서나 운영 환경과 100% 동일한 Nori 형태소 분석기 기반의 통합 테스트를 100% 자동화하는 데 성공했습니다.
 
-- 동시 주문 시 재고 음수 발생 가능
-- 비관적 락은 성능 저하 우려
+#### 3) Elasticsearch Near-Real-Time(NRT) 지연과 _refresh API 기반 테스트 Flaky 해결
 
-### 적용 방식
+* **현상 (Problem)**
 
-```java
-@Entity
-public class Book {
-    @Version
-    private Long version;
+  * Elasticsearch에 도서 데이터를 색인(Index/Update)한 직후 곧바로 조회하는 통합 테스트를 실행할 때, 데이터가 즉시 검색되지 않아 간헐적으로 성공/실패를 반복하는 Flaky Test 현상이 발생했습니다.
+  * 이를 임시로 회피하기 위해 테스트 코드 곳곳에 Thread.sleep(1000) 대기 로직을 작성했으나, 이로 인해 전체 테스트 빌드 시간이 크게 증가하는 문제가 생겼습니다.
+* **원인 (Root Cause)**
 
-    private int stock;
+  * Elasticsearch는 데이터를 색인할 때 메모리 버퍼에 임시 저장한 후, 기본 1초 주기의 Refresh 작업을 거쳐 Lucene Segment 디스크 캐시로 넘어가야만 실제 검색 가능(Searchable) 상태가 되는 Near-Real-Time(NRT) 아키텍처 특성을 가집니다.
+* **해결 (Solution)**
 
-    public void decreaseStock(int quantity) {
-        if (this.stock < quantity) {
-            throw new IllegalStateException("재고가 부족합니다.");
-        }
-        this.stock -= quantity;
-    }
+  * 테스트 코드 내 불필요하고 불확실한 대기 시간(Thread.sleep)을 전면 제거하고, ES의 인덱싱 동작을 명시적으로 제어하도록 변경했습니다.
+  * 테스트 전용 Helper 메서드를 작성하여, 테스트 데이터를 생성/수정하는 즉시 Elasticsearch RestClient를 통해 해당 인덱스에 **POST /{index}/_refresh** API를 명시적으로 호출하여 Segment를 강제로 생성시켰습니다.
+* **결과 (Impact)**
 
-    public void increaseStock(int quantity) {
-        this.stock += quantity;
-    }
-}
-```
+  * 데이터 색인 직후 100% 즉시 검색이 가능한 상태로 확정 지음으로써 **통합 테스트의 성공 신뢰성을 100% 확보**했고, 불필요한 대기 로직을 없애 **전체 테스트 빌드 수행 시간을 대폭 단축**했습니다.
 
-- `@Version` 필드로 동시 수정 감지
-- 충돌 시 `OptimisticLockException` 발생 → 재시도
+### 4-3. 프로젝트 회고 및 성장 포인트
 
-### 개선 효과
+* **트랜잭션 경계와 외부 의존성의 명확한 분리**
 
-- 데이터 정합성 보장
-- 비관적 락 대비 높은 동시 처리량
+  * @Transactional 안에 외부 API 호출을 무심코 작성했을 때 DB 커넥션 풀이 어떻게 고갈되는지 직접 경험하며, 백엔드 아키텍처에서 '외부 시스템 연동 시 트랜잭션 경계를 어디까지 잡아야 하는가'에 대한 명확한 기준을 세웠습니다. Facade 패턴과 TransactionTemplate을 결합해 보상 트랜잭션까지 고려하는 분산 처리 기본기를 다졌습니다.
+* **데이터 무결성을 최우선으로 하는 시스템 설계**
 
----
+  * 이커머스에서 가장 중요한 재고 및 결제 정합성을 지키기 위해, @Version 기반 낙관적 락과 Toss Webhook 체계를 결합했습니다. 클라이언트의 브라우저 이탈이나 네트워크 불안정 등 다양한 예외 상황에서도 단 1건의 결제 불일치나 재고 오차가 발생하지 않도록 정교하게 설계했습니다.
+* **기술의 내부 동작 원리(Internal Mechanics)에 기반한 문제 해결**
 
-## 3-4. Toss Payments 결제 연동
+  * Elasticsearch 통합 테스트 실패 문제를 해결하는 과정에서 단순히 Thread.sleep으로 때우는 임시방편이 아닌, ES의 Near-Real-Time(NRT) 인덱싱 및 Segment Refresh 메커니즘을 파악했습니다. 문제의 근본 원인을 이해하고 엔진 명시적 API (_refresh)로 원인을 제거함으로써 신뢰할 수 있는 테스트 환경을 완성했습니다.
 
-### 적용 방식
+## 5. 테스트 전략
 
-```java
-// 결제 승인
-public String approvePayment(PaymentApproveRequestDto request) {
-    String confirmUrl = API_BASE_URL + "/v1/payments/confirm";
-    // POST request with paymentKey, orderId, amount
-}
+* **Testcontainers 통합 테스트**: Nori 플러그인이 동적 설치된 Elasticsearch Docker 컨테이너를 테스트 환경에서 동적 구동.
+* **검증 범위**: @Version 낙관적 락 충돌 시 예외 처리 검증, Toss Webhook 처리 시 상태 전환 검증, Nori 가중치 랭킹 쿼리 검증, _refresh API를 활용한 색인 직후 검색 정확도 검증.
 
-// 결제 취소
-public void cancelPayment(PaymentCancelRequestDto request) {
-    String cancelUrl = API_BASE_URL + "/v1/payments/" + paymentKey + "/cancel";
-    // POST request with cancelReason
-}
-
-// Webhook 처리 (결제 상태 동기화)
-@Transactional
-public void handleWebhook(TossWebhookRequestDto dto) {
-    // DONE → OrderStatus.PAYMENT_COMPLETED
-    // CANCELED → OrderStatus.CANCELLED
-}
-```
-
-### 결제 흐름
-
-1. 클라이언트 → Toss 결제창 → 결제 완료
-2. `PaymentOrderFacade`가 승인 → 결제 저장 · 주문 생성 · 장바구니 비우기(단일 트랜잭션)
-3. 주문 생성 실패 시 보상 트랜잭션으로 Toss 결제 자동 취소
-4. Toss → 서버 Webhook 호출 → 주문 상태 동기화
-5. 취소/환불 시 재고 자동 복구
-
----
-
-## 3-5. 예외 처리 통합 설계
-
-### 적용 방식
-
-- **ErrorCode Enum**: 24개 에러 코드 정의
-- **ExpectedException**: 비즈니스 예외 래핑
-- **GlobalExceptionHandler**: 중앙 집중 예외 처리
-
-```java
-@RestControllerAdvice
-public class GlobalExceptionHandler {
-
-    @ExceptionHandler(ExpectedException.class)
-    public ResponseEntity<OnBokResponse<String>> handleExpectedException(ExpectedException e) {
-        return ResponseEntity.badRequest()
-            .body(OnBokResponse.error(e.getErrorCode()));
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleValidationException(MethodArgumentNotValidException e) {
-        // @Valid 검증 실패 처리
-    }
-}
-```
-
-### 응답 형식
-
-```json
-{
-  "status": 400,
-  "message": "존재하지 않는 도서입니다."
-}
-```
-
----
-
-## 3-6. N+1 문제 해결
-
-### 문제
-
-- 주문 목록 조회 시 OrderItem, User 각각 쿼리 발생
-- 100건 조회 시 300+ 쿼리
-
-### 해결
-
-- Fetch Join 적용
-- `@EntityGraph` 활용
-- 필요한 필드만 DTO 프로젝션
-
----
-
-## 3-7. 트랜잭션 범위 최소화
-
-- `@Transactional(readOnly = true)` 조회 분리
-- 쓰기 작업 최소 범위 지정
-- 불필요한 락 방지
-- **외부 API를 트랜잭션에서 제외**: Facade에서 `TransactionTemplate`으로 경계를 직접 지정해,
-  Toss API 응답을 기다리는 동안 DB 커넥션을 점유하지 않도록 분리
-  (DB 롤백은 이미 승인된 결제를 되돌리지 못하므로 보상 트랜잭션으로 처리)
-
----
-
-# 4. 테스트 전략
-
-```
-src/test-unit/          # 단위 테스트 (10개)
-src/test-integration/   # 통합 테스트 (13개)
-```
-
-Gradle Custom SourceSet으로 분리 관리
-
-## 4-1. 단위 테스트 (10개)
-
-| 파일 | 대상 |
-|------|------|
-| BookStockTest | 재고 증감, 동시성 시나리오 |
-| CartTest | 장바구니 도메인 로직 |
-| DeliveryAddressTest | 배송지 도메인 로직 |
-| TossPaymentTest | 결제 도메인 로직 |
-| CartCalculationServiceTest | 장바구니 금액 계산 |
-| RecommendationServiceTest | 추천 알고리즘 5가지 검증 |
-| BookEsServiceTest | Elasticsearch 검색 |
-| OAuth2UserServiceTest | OAuth2 인증 로직 |
-| OrderCancellationFacadeTest | 주문 취소/환불 흐름 (권한 검증, 호출 순서, 실패 처리) |
-| OrderViewControllerCancelRefundTest | 주문 취소/환불 컨트롤러 (메시지/리다이렉트) |
-
-## 4-2. 통합 테스트 (13개)
-
-### Repository 테스트 (5개)
-
-| 파일 | 대상 |
-|------|------|
-| CartRepositoryTest | 장바구니 CRUD |
-| DeliveryAddressRepositoryTest | 배송지 CRUD |
-| ImageRepositoryTest | 이미지 저장/조회 |
-| OrderRepositoryTest | 주문 상태별 조회 |
-| ReviewRepositoryTest | 리뷰 CRUD, 중복 체크 |
-
-### Infrastructure 테스트 (8개)
-
-| 파일 | 대상 |
-|------|------|
-| DeliveryAddressIntegrationTest | 배송지 서비스 플로우 |
-| OrderIntegrationTest | 주문 생성 및 재고 감소 |
-| ReviewIntegrationTest | 리뷰 작성/수정/삭제 |
-| ImageLocalUploadTest | 로컬 이미지 업로드 |
-| ImageS3ServiceTest | S3 URL 등록 |
-| TransactionRollbackTest | 재고 부족 시 롤백 |
-| TransactionStabilityTest | 트랜잭션 원자성 |
-| ElasticsearchIntegrationTest | ES 검색 (Docker) |
-
-## 4-3. 실행
+## 6. 실행 방법 (Local Run)
 
 ```bash
-# 단위 테스트
-./gradlew unitTest
+# 1. Repository Clone
+$ git clone <https://github.com/HyunRe/ONBOK.git>
+$ cd ONBOK
 
-# 통합 테스트
-./gradlew integrationTest
+# 2. Infra Containers Run (MariaDB, Elasticsearch with Nori)
+$ docker-compose up -d
 
-# 전체 테스트
-./gradlew check
+# 3. Application Run
+$ ./gradlew bootRun
 ```
-
----
-
-# 5. 트러블슈팅
-
-## 5-1. Elasticsearch Nori 플러그인 누락
-
-- **문제**: Testcontainers ES 이미지에 Nori 플러그인 미포함
-- **증상**: `Unknown tokenizer type [nori_tokenizer]` 에러
-- **해결**: 컨테이너 시작 시 플러그인 설치 명령 추가
-
-```java
-.withCommand("sh", "-c",
-    "bin/elasticsearch-plugin install analysis-nori && bin/elasticsearch")
-```
-
-## 5-2. 재고 동시성 문제
-
-- **문제**: 동시 주문 시 재고가 음수로 감소
-- **해결**: `@Version` 낙관적 락 적용
-
-## 5-3. N+1 쿼리 문제
-
-- **문제**: 연관 엔티티 조회 시 쿼리 폭발
-- **해결**: Fetch Join 적용
-
-## 5-4. 통합 테스트 프로파일 미적용
-
-- **문제**: IntelliJ에서 통합 테스트 실행 시 로컬 DB 연결 시도
-- **해결**: `@ActiveProfiles("test")` 추가 + 별도 리소스 디렉토리 구성
-
-## 5-5. 결제-주문 정합성 (Facade 도입)
-
-- **문제**: 결제 승인 ~ 주문 생성이 Controller에서 조합되고 트랜잭션이 없어,
-  중간에 실패하면 결제만 되고 주문은 없는 상태가 발생
-- **원인**: 오케스트레이션 계층이 없어 그 역할이 Controller로 밀려남
-- **해결**: `PaymentOrderFacade` 도입
-    - 장바구니 검증을 결제 승인 **앞**으로 이동 (승인 후 실패 자체를 줄임)
-    - Toss API 호출은 트랜잭션 밖, DB 쓰기 3건은 `TransactionTemplate`으로 한 트랜잭션
-    - 그래도 실패하면 보상 트랜잭션으로 결제 취소
-
-```java
-// 외부 API는 트랜잭션 밖 - 응답 대기 동안 DB 커넥션을 점유하지 않는다
-TossPayment approvedPayment = tossPaymentService.approveAndBuildPayment(approveRequest);
-
-try {
-    return transactionTemplate.execute(status -> { /* 결제 저장 + 주문 생성 + 장바구니 비우기 */ });
-} catch (RuntimeException e) {
-    compensate(approveRequest.getPaymentKey(), e);  // DB 롤백으로는 결제를 되돌릴 수 없다
-    throw e;
-}
-```
-
----
-
-# 6. 배운 점
-
-- **도메인 설계는 "기능 구현"보다 "규칙 정의"에 가깝다.**
-    - OrderStatus 상태 전이 규칙을 Enum 내부에 정의
-    - 잘못된 상태 전이를 컴파일 타임에 방지
-
-- **비즈니스 로직은 서비스가 아닌 엔티티가 가져야 한다.**
-    - `decreaseStock()`, `changeStatus()` 등 도메인 메서드
-    - 응집도 높은 설계
-
-- **테스트가 가능한 구조는 곧 책임이 명확한 구조다.**
-    - 단위/통합 테스트 분리
-    - Mock 없이 도메인 로직 테스트 가능
-
-- **성능 문제는 설계 단계에서 예방하는 것이 가장 좋다.**
-    - N+1 문제 사전 인지
-    - 낙관적 락 선택 이유 명확화
-
-- **검색 시스템은 언어 특성을 고려해야 한다.**
-    - 한글은 형태소 분석기 필수
-    - Nori 토크나이저로 검색 품질 대폭 향상
-
-- **트랜잭션 경계는 "넓게"가 아니라 "정확하게" 잡아야 한다.**
-    - 외부 API를 트랜잭션에 넣으면 커넥션을 점유할 뿐, 결제는 롤백되지 않는다
-    - 되돌릴 수 있는 실패(주문 생성)는 보상 트랜잭션으로,
-      되돌릴 수 없는 실패(이미 취소된 결제)는 수동 정산 로그로 구분해 처리
-
-- **패턴은 이름이 아니라 책임의 빈자리를 채울 때 의미가 있다.**
-    - Facade를 전 도메인에 깔지 않고, 여러 도메인이 실제로 얽히는 결제·주문 두 곳에만 적용
-    - 서비스가 하나뿐인 얇은 컨트롤러에는 도입하지 않음
-
----
-
-# 7. 실행 방법
-
-## 7-1. 필수 프로그램
-
-- JDK 17 이상
-- MariaDB 10.x 또는 MySQL 8
-- Elasticsearch 8.x (Nori 플러그인)
-- Docker (통합 테스트용)
-
-## 7-2. 데이터베이스 생성
-
-```sql
-CREATE DATABASE book_hub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-## 7-3. 설정 파일 생성
-
-```bash
-cp src/main/resources/application-secret.yaml.example \
-   src/main/resources/application-secret.yaml
-# DB 비밀번호, Toss API 키 등 설정
-```
-
-## 7-4. 애플리케이션 실행
-
-```bash
-./gradlew bootRun --args='--spring.profiles.active=local'
-```
-
-## 7-5. 접속
-
-- 웹: http://localhost:8080
-- Swagger: http://localhost:8080/swagger-ui.html
